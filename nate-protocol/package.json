@@ -8,13 +8,19 @@
     "test": "npx hardhat test",
     "test:gas": "REPORT_GAS=true npx hardhat test",
     "node": "npx hardhat node",
-    "deploy:local": "npx hardhat run scripts/deploy.js --network localhost",
-    "deploy:sepolia": "npx hardhat run scripts/deploy.js --network sepolia",
+    "deploy:local": "hardhat run scripts/deploy_system.js --network localhost",
+    "deploy:sepolia": "hardhat run scripts/deploy_system.js --network sepolia",
     "deploy:mainnet": "npx hardhat run scripts/deploy.js --network mainnet",
     "verify": "npx hardhat verify --network sepolia",
     "clean": "npx hardhat clean"
   },
-  "keywords": ["ethereum", "solidity", "defi", "human-capital", "token"],
+  "keywords": [
+    "ethereum",
+    "solidity",
+    "defi",
+    "human-capital",
+    "token"
+  ],
   "author": "Nate",
   "license": "MIT",
   "devDependencies": {
