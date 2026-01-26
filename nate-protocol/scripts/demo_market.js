@@ -32,6 +32,14 @@ async function main() {
     await market.waitForDeployment();
     console.log(`Step 3: Market deployed\n`);
 
+    // 1b. Genesis Mint (Simulation Only)
+    // Since StabilityEngine isn't deployed here, we manually mint to fund the demo.
+    console.log(">>> GENESIS MINT (DEMO SETUP)...");
+    const MINTER_ROLE = await token.MINTER_ROLE();
+    await token.grantRole(MINTER_ROLE, deployer.address);
+    await token.mint(deployer.address, hre.ethers.parseEther("10000")); // Mint 10k
+    console.log("Minted 10,000 NATE to deployer for testing\n");
+
     // 2. Fund Investors
     console.log(">>> FUNDING INVESTORS...");
     const FUND_AMOUNT = hre.ethers.parseEther("1000"); // 1000 NATE each
