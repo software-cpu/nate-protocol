@@ -25,6 +25,8 @@ contract LifeOracleV2 is FunctionsClient, ConfirmedOwner {
     bytes public s_lastError;
 
     // The Tangible Metrics
+    // The Tangible Metrics
+    /// @dev Struct holding all quantified self data points
     struct QuantifiedSelf {
         uint256 totalValue;        // The final calculated monetary value (18 decimals)
         uint8 sleepScore;          // 0-100
@@ -32,7 +34,7 @@ contract LifeOracleV2 is FunctionsClient, ConfirmedOwner {
         uint8 deepWorkHours;       // hours
         uint16 gitHubCommitStreak; // days
         uint256 socialImpactScore; // aggregate score
-        uint256 futureEarnings;    // projected contracts/revenue
+        uint256 futureEarnings;    // projected contracts/revenue (USD 1e18)
         uint256 lastUpdate;
     }
 
@@ -115,6 +117,9 @@ contract LifeOracleV2 is FunctionsClient, ConfirmedOwner {
                 uint256 _social,
                 uint256 _futureEarnings
             ) = abi.decode(response, (uint256, uint8, uint8, uint8, uint16, uint256, uint256));
+
+            // Sanity Check: Cap Future Earnings at $1B to prevent abuse
+            require(_futureEarnings <= 1_000_000_000 * 1e18, "Unrealistic earnings");
 
             metrics = QuantifiedSelf({
                 totalValue: _totalValue,

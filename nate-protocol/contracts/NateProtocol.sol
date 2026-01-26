@@ -29,7 +29,7 @@ contract NateProtocol is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard {
         uint256 id;
         string description;
         string category;
-        uint256 estimatedValue;
+        uint256 estimatedValue; // USD value (18 decimals)
         OpportunityStatus status;
         address executor;
         uint256 createdAt;
@@ -74,6 +74,12 @@ contract NateProtocol is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard {
     /**
      * @dev Called by StabilityEngine when Nate's value increases (Human QE)
      */
+    /**
+     * @notice Called by StabilityEngine when Nate's value increases (Human QE)
+     * @dev Restricted to MINTER_ROLE (StabilityEngine)
+     * @param to The address receiving the minted tokens
+     * @param amount The amount to mint
+     */
     function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) {
         _mint(to, amount);
     }
@@ -100,6 +106,12 @@ contract NateProtocol is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard {
 
     // ============ Opportunity Registry ============
 
+    /**
+     * @notice Log a new work opportunity/bounty
+     * @param _category The category of work (e.g. "Dev", "Design")
+     * @param _description Detailed description
+     * @param _estimatedValue Value in USD (18 decimals)
+     */
     function logOpportunity(
         string calldata _category,
         string calldata _description, 
@@ -147,6 +159,10 @@ contract NateProtocol is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard {
 
     // ============ Staking ============
 
+    /**
+     * @notice Stake NATE for governance power
+     * @param _amount Amount to stake
+     */
     function stake(uint256 _amount) external nonReentrant {
         require(_amount > 0, "Cannot stake 0");
         require(balanceOf(msg.sender) >= _amount, "Insufficient balance");

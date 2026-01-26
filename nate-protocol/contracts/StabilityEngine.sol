@@ -16,6 +16,12 @@ interface INateToken is IERC20 {
  * @dev The "Central Bank" logic for $NATE.
  * Manages the Collateral Ratio and authorizes minting based on Human + Liquid Capital.
  */
+/**
+ * @title StabilityEngine
+ * @notice The "Central Bank" logic for $NATE.
+ * @dev Manages the Collateral Ratio and authorizes minting based on Human + Liquid Capital.
+ * Implements "Human Quantitative Easing" where supply expands with Human Value.
+ */
 contract StabilityEngine is Ownable, ReentrancyGuard {
 
     // ============ Constants ============
@@ -29,7 +35,9 @@ contract StabilityEngine is Ownable, ReentrancyGuard {
     ILifeOracle public lifeOracle;
     
     // ETH Price Stub (For MVP - In prod, use Chainlink)
-    uint256 public ethPriceUSD = 2500 * 1e8; // $2500
+    // ETH Price Stub (Fixed for Phase 2 MVP - Gas Optimized)
+    // @dev In production, this would be replaced by a Chainlink AggregatorV3Interface
+    uint256 public constant ethPriceUSD = 2500 * 1e8; // $2500/ETH fixed
     
     // Treasury Tracking
     uint256 public totalLiquidETH;
@@ -52,6 +60,12 @@ contract StabilityEngine is Ownable, ReentrancyGuard {
      * Mint new NATE tokens against the rising value of Nate's life metrics.
      * Only checks that we remain over-collateralized.
      */
+    /**
+     * @notice "Human Quantitative Easing"
+     * @dev Mint new NATE tokens against the rising value of Nate's life metrics.
+     * Only checks that we remain over-collateralized.
+     * @param _amount The amount of NATE to mint
+     */
     function mint(uint256 _amount) external onlyOwner {
         uint256 totalSupply = nateToken.totalSupply();
         uint256 projectedSupply = totalSupply + _amount;
@@ -72,6 +86,11 @@ contract StabilityEngine is Ownable, ReentrancyGuard {
     /**
      * @dev Redeem NATE for ETH at $1.00 Peg.
      * Burns NATE -> Sends equivalent ETH.
+     */
+    /**
+     * @notice Redeem NATE for ETH at $1.00 Peg.
+     * @dev Burns NATE -> Sends equivalent ETH.
+     * @param _amountNate Amount of NATE to burn
      */
     function redeem(uint256 _amountNate) external nonReentrant {
         require(nateToken.balanceOf(msg.sender) >= _amountNate, "Insufficient funds");
@@ -130,9 +149,10 @@ contract StabilityEngine is Ownable, ReentrancyGuard {
         emit TreasuryDeposit(msg.sender, msg.value);
     }
     
-    function setEthPrice(uint256 _price) external onlyOwner {
-        ethPriceUSD = _price;
-    }
+    // @dev Removed setEthPrice for gas optimization (constant price)
+    // function setEthPrice(uint256 _price) external onlyOwner {
+    //     ethPriceUSD = _price;
+    // }
     
     function setOracle(address _oracle) external onlyOwner {
         lifeOracle = ILifeOracle(_oracle);
