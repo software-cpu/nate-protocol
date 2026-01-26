@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./interfaces/ILifeOracle.sol";
+import "hardhat/console.sol";
 
 interface INateToken is IERC20 {
     function mint(address to, uint256 amount) external;
@@ -67,6 +68,8 @@ contract StabilityEngine is Ownable, ReentrancyGuard {
      * @param _amount The amount of NATE to mint
      */
     function mint(uint256 _amount) external onlyOwner {
+        console.log("Engine: mint called by", msg.sender);
+        console.log("Engine: owner is", owner());
         uint256 totalSupply = nateToken.totalSupply();
         uint256 projectedSupply = totalSupply + _amount;
         

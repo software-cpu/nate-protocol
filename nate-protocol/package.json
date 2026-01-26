@@ -26,7 +26,9 @@
   "devDependencies": {
     "@chainlink/functions-toolkit": "^0.3.2",
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",
-    "hardhat": "^2.19.0"
+    "circomlib": "^2.0.5",
+    "hardhat": "^2.19.0",
+    "snarkjs": "^0.7.6"
   },
   "dependencies": {
     "@chainlink/contracts": "^1.5.0",
