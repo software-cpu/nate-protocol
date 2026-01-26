@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "../LifeOracleV2.sol";
+import "./LifeOracleV2.sol";
 import "./zk-email/DKIMRegistry.sol";
 
 interface IGroth16Verifier {
