@@ -6,33 +6,45 @@ import "./StabilityEngine.sol";
 import "./TaskMarket.sol";
 
 /**
- * @title GovernanceBoard (Phase 6: PID Control)
- * @notice The "Algo-Board" that governs the Stability Engine using Control Theory.
- * @dev Implements a Proportional-Integral-Derivative (PID) Controller to stabilize Trust.
+ * @title GovernanceBoard (Phase 7: Nonlinear Adaptive Control)
+ * @notice The "Algo-Board" utilizing Advanced Control Theory.
+ * @dev Implements an Adaptive PID Controller with Exponential Decay Memory.
  * 
- * ## Differential Equation
- * u(t) = Kp * e(t) + Ki * ∫e(t)dt + Kd * de(t)/dt
+ * ## System Dynamics
+ * The control law is governed by the following nonlinear differential equation:
  * 
- * Where e(t) = Market Confidence - Target (90%)
+ *   u(t) = Kp⋅e(t) + Ki⋅∫[e(τ)⋅e^(-λ(t-τ))]dτ + Kd(σ)⋅(de/dt)
+ * 
+ * Key Innovations:
+ * 1. **Leaky Integrator (Memory)**: The integral term decays exponentially (λ), 
+ *    simulating organic memory loss rather than arbitrary hard caps.
+ * 2. **Adaptive Damping**: The Kd gain is not static; it scales with market volatility 
+ *    (σ = |de/dt|). High volatility triggers stronger braking.
  */
 contract GovernanceBoard is Ownable {
 
     StabilityEngine public engine;
     TaskMarket public market;
     
-    // === PID Parameters (Scaled by 100) ===
-    int256 public K_p = 200;  // Proportional Gain (Response Strength)
-    int256 public K_i = 10;   // Integral Gain (Memory / Consistency Reward)
-    int256 public K_d = 500;  // Derivative Gain (Damping / Crash Prevention)
+    // === Adaptive Parameters ===
+    int256 public constant PRECISION = 10000;
     
-    // === Control State ===
-    int256 public targetConfidence = 90; // We want 90% confidence always
-    int256 public integralError;         // Accumulated error over time
-    int256 public prevError;             // Error from last check
+    // Base Gains (Normalized)
+    int256 public base_Kp = 200; 
+    int256 public base_Ki = 15;
+    int256 public base_Kd = 400;
+    
+    // Nonlinear Factors
+    int256 public memory_decay = 9500; // λ = 0.95 per step (Exponential Decay)
+    int256 public nonlinearity_factor = 200; // Scaling for adaptive damping
+
+    // === System State ===
+    int256 public targetConfidence = 90;
+    int256 public integralState; // Accumulator
+    int256 public prevError;
     
     // Config
     uint256 public constant MINT_DELAY = 1 hours;
-    uint256 public constant VETO_THRESHOLD = 50000 * 1e18;
 
     struct MintRequest {
         uint256 amount;
@@ -44,10 +56,9 @@ contract GovernanceBoard is Ownable {
 
     MintRequest[] public requests;
     
-    event MintRequested(uint256 indexed requestId, uint256 amount, uint256 taskId);
+    event PIDUpdate(int256 error, int256 p, int256 i, int256 d, uint256 adjustment);
     event MintApproved(uint256 indexed requestId, address indexed aiAgent, uint256 scaledAmount);
     event MintVetoed(uint256 indexed requestId, string reason);
-    event PIDUpdate(int256 error, int256 p, int256 i, int256 d, uint256 adjustment);
 
     constructor(address _engine, address _market) Ownable(msg.sender) {
         engine = StabilityEngine(payable(_engine));
@@ -56,10 +67,11 @@ contract GovernanceBoard is Ownable {
 
     // ============ Admin Tuning ============
     
-    function setPIDGains(int256 _kp, int256 _ki, int256 _kd) external onlyOwner {
-        K_p = _kp;
-        K_i = _ki;
-        K_d = _kd;
+    function setSystemParams(int256 _kp, int256 _ki, int256 _kd, int256 _decay) external onlyOwner {
+        base_Kp = _kp;
+        base_Ki = _ki;
+        base_Kd = _kd;
+        memory_decay = _decay;
     }
 
     // ============ User Actions ============
@@ -72,59 +84,61 @@ contract GovernanceBoard is Ownable {
             executed: false,
             vetoed: false
         }));
-        
-        emit MintRequested(requests.length - 1, _amount, _taskId);
     }
 
-    // ============ AI Agent Actions ============
+    // ============ Control Loop ============
 
     /**
-     * @notice Approve a mint using PID Control Logic.
-     * @dev Calculates error terms and adjusts the mint amount dynamically.
+     * @notice Execute the Nonlinear Control Law
      */
     function approveMint(uint256 _requestId) external onlyOwner {
         MintRequest storage req = requests[_requestId];
-        require(!req.executed, "Already executed");
+        require(!req.executed, "Executed");
         require(!req.vetoed, "Vetoed");
         
-        // 1. Get Feedback (Market Confidence)
+        // 1. Comparison Unit (Error Calculation)
         (uint256 yesPercent, ) = market.getOdds(req.linkedTaskId);
-        int256 currentConfidence = int256(yesPercent);
+        int256 confidence = int256(yesPercent);
+        int256 error = confidence - targetConfidence;
         
-        // 2. Calculate Error
-        int256 error = currentConfidence - targetConfidence;
+        // 2. Proportional Term (Linear Response)
+        // P = Kp * e(t)
+        int256 P = (base_Kp * error) / 100;
         
-        // 3. PID Calcs
-        // Proportional
-        int256 P = (K_p * error) / 100;
+        // 3. Integral Term (Leaky Integrator / Exponential Decay)
+        // I(t) = (I(t-1) * λ) + e(t)
+        // This removes the need for arbitrary clamping. History fades naturally.
+        integralState = (integralState * memory_decay) / PRECISION + error;
+        int256 I = (base_Ki * integralState) / 100;
         
-        // Integral (Accumulate error, capped to prevent windup)
-        integralError += error;
-        // Clamp integral to +/- 1000 to prevent runaway
-        if (integralError > 1000) integralError = 1000;
-        if (integralError < -1000) integralError = -1000;
-        
-        int256 I = (K_i * integralError) / 100;
-        
-        // Derivative
+        // 4. Derivative Term (Adaptive Damping)
+        // de/dt = current_error - prev_error
         int256 derivative = error - prevError;
-        int256 D = (K_d * derivative) / 100;
+        
+        // Nonlinear Gain Scheduling:
+        // Kd_effective = Kd_base * (1 + |derivative| * scaling)
+        // If derivative is high (crash), gain increases to apply brakes harder.
+        int256 volatility = derivative >= 0 ? derivative : -derivative;
+        int256 adaptive_gain = base_Kd + (volatility * volatility * nonlinearity_factor) / 100;
+        
+        int256 D = (adaptive_gain * derivative) / 100;
         
         prevError = error;
         
-        // 4. Calculate Control Output (Adjustment Factor)
-        // Baseline is 100% (if error is 0). 
-        // Example: If output is -20, we mint 80%. If output is +10, we mint 110% (bonus).
+        // 5. Control Output
+        // u(t) = P + I + D
         int256 adjustment = P + I + D;
+        
+        // Map output to Mint Multiplier (Baseline 100%)
         int256 finalPercent = 100 + adjustment;
         
-        // Clamp result (0% to 150%)
+        // Physical Limits (Saturation)
         if (finalPercent < 0) finalPercent = 0;
-        if (finalPercent > 150) finalPercent = 150;
+        if (finalPercent > 200) finalPercent = 200; // Allow 2x boost if stellar
         
         emit PIDUpdate(error, P, I, D, uint256(finalPercent));
         
-        // 5. Execute
+        // 6. Actuator
         uint256 scaledAmount = (req.amount * uint256(finalPercent)) / 100;
         
         if (scaledAmount > 0) {
@@ -133,9 +147,8 @@ contract GovernanceBoard is Ownable {
             INateToken(address(engine.nateToken())).transfer(owner(), scaledAmount);
             emit MintApproved(_requestId, msg.sender, scaledAmount);
         } else {
-            // Effectively vetoed by math
-             emit MintVetoed(_requestId, "PID Controller rejected mint (0%)");
-             req.vetoed = true; // Mark as processed but rejected
+             req.vetoed = true; // Signal rejection by controller
+             emit MintVetoed(_requestId, "Control Loop Output <= 0%");
         }
     }
 
