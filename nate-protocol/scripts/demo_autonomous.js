@@ -109,7 +109,10 @@ async function main() {
 
     console.log("   -> AI Agent detects value increase. Calculating Mint...");
 
-    const mintAmount = hre.ethers.parseEther("1000");
+    // Total Value added by ZK Proof = 4 hours * $250 = $1000
+    // Max Mint allowed = $1000 / 1.5 (CR) = 666.66 NATE
+    // We request 600 to be safe.
+    const mintAmount = hre.ethers.parseEther("600");
 
     // AI Agent (Owner) requests mint
     // DEBUG: Check owners

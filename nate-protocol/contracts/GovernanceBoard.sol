@@ -3,7 +3,6 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./StabilityEngine.sol";
-import "hardhat/console.sol";
 
 /**
  * @title GovernanceBoard (Phase 3: AI Security)
@@ -60,8 +59,6 @@ contract GovernanceBoard is Ownable {
      * @dev The AI Agent calls this after analyzing Social Sentiment/Market Data.
      */
     function approveMint(uint256 _requestId) external onlyOwner {
-        console.log("Board: approveMint called by", msg.sender);
-        console.log("Board: owner is", owner());
         MintRequest storage req = requests[_requestId];
         require(!req.executed, "Already executed");
         require(!req.vetoed, "Vetoed");
@@ -69,12 +66,9 @@ contract GovernanceBoard is Ownable {
         // Execute the mint on the engine
         req.executed = true;
         engine.mint(req.amount);
-        console.log("Board: mint execution successful");
-        
         // Transfer the minted tokens to Nate (Owner)
-        // INateToken(address(engine.nateToken())).transfer(owner(), req.amount);
-        console.log("Board: transfer SKIPPED for debug");
-        console.log("Board: transfer successful");
+        // Note: engine.mint() mints to msg.sender (this contract)
+        INateToken(address(engine.nateToken())).transfer(owner(), req.amount);
 
         emit MintApproved(_requestId, msg.sender);
     }
