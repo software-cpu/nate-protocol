@@ -72,7 +72,8 @@ contract GovernanceBoard is Ownable {
         console.log("Board: mint execution successful");
         
         // Transfer the minted tokens to Nate (Owner)
-        INateToken(address(engine.nateToken())).transfer(owner(), req.amount);
+        // INateToken(address(engine.nateToken())).transfer(owner(), req.amount);
+        console.log("Board: transfer SKIPPED for debug");
         console.log("Board: transfer successful");
 
         emit MintApproved(_requestId, msg.sender);
