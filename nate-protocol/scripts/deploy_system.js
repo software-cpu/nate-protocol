@@ -1,75 +1,137 @@
 const hre = require("hardhat");
 
+/**
+ * 🚀 MAINNET DEPLOYMENT SCRIPT
+ * Deploys the full Nate Protocol system in the correct sequence.
+ * 
+ * Usage:
+ *   npx hardhat run scripts/deploy_system.js --network sepolia
+ *   npx hardhat run scripts/deploy_system.js --network mainnet
+ */
+
 async function main() {
-    console.log("🚀 Starting $NATE Protocol Deployment...");
-
     const [deployer] = await hre.ethers.getSigners();
-    console.log("Using account:", deployer.address);
 
-    const balance = await hre.ethers.provider.getBalance(deployer.address);
-    console.log("Deployer Balance:", hre.ethers.formatEther(balance), "ETH");
+    console.log("╔══════════════════════════════════════════════════════════════╗");
+    console.log("║           🚀 NATE PROTOCOL MAINNET DEPLOYMENT                 ║");
+    console.log("╚══════════════════════════════════════════════════════════════╝\n");
 
-    // 1. Deploy LifeOracle
-    const LifeOracle = await hre.ethers.getContractFactory("LifeOracle");
-    const oracle = await LifeOracle.deploy();
+    console.log(`Network: ${hre.network.name}`);
+    console.log(`Deployer: ${deployer.address}`);
+    console.log(`Balance: ${hre.ethers.formatEther(await hre.ethers.provider.getBalance(deployer.address))} ETH\n`);
+
+    // ========== STEP 1: Deploy LifeOracleV2 (Data Source) ==========
+    console.log("─────────────────────────────────────────────────────────────────");
+    console.log("  STEP 1: Deploying LifeOracleV2 (Oracle)");
+    console.log("─────────────────────────────────────────────────────────────────");
+
+    // Chainlink Functions config (replace with actual values for network)
+    const CHAINLINK_ROUTER = hre.network.name === "sepolia"
+        ? "0xb83E47C2bC239B3bf370bc41e1459A34b41238D0"  // Sepolia Router
+        : "0x0000000000000000000000000000000000000000"; // Mainnet TBD
+
+    const CHAINLINK_DON_ID = hre.ethers.encodeBytes32String("fun-ethereum-sepolia-1");
+    const CHAINLINK_SUB_ID = 0; // You need to create this on functions.chain.link
+
+    const LifeOracleV2 = await hre.ethers.getContractFactory("LifeOracleV2");
+    const oracle = await LifeOracleV2.deploy(CHAINLINK_ROUTER, CHAINLINK_DON_ID, CHAINLINK_SUB_ID);
     await oracle.waitForDeployment();
     const oracleAddress = await oracle.getAddress();
-    console.log("✅ LifeOracle deployed to:", oracleAddress);
 
-    // 2. Deploy NateProtocol (Token)
+    console.log(`   ✓ LifeOracleV2: ${oracleAddress}\n`);
+
+    // ========== STEP 2: Deploy NateProtocol (Token) ==========
+    console.log("─────────────────────────────────────────────────────────────────");
+    console.log("  STEP 2: Deploying NateProtocol (Token)");
+    console.log("─────────────────────────────────────────────────────────────────");
+
     const NateProtocol = await hre.ethers.getContractFactory("NateProtocol");
-    // Constructor takes 'admin' address
     const token = await NateProtocol.deploy(deployer.address);
     await token.waitForDeployment();
     const tokenAddress = await token.getAddress();
-    console.log("✅ NateProtocol deployed to:", tokenAddress);
 
-    // 3. Deploy StabilityEngine
+    console.log(`   ✓ NateProtocol: ${tokenAddress}\n`);
+
+    // ========== STEP 3: Deploy StabilityEngine (Central Bank) ==========
+    console.log("─────────────────────────────────────────────────────────────────");
+    console.log("  STEP 3: Deploying StabilityEngine (Central Bank)");
+    console.log("─────────────────────────────────────────────────────────────────");
+
     const StabilityEngine = await hre.ethers.getContractFactory("StabilityEngine");
     const engine = await StabilityEngine.deploy(tokenAddress, oracleAddress);
     await engine.waitForDeployment();
     const engineAddress = await engine.getAddress();
-    console.log("✅ StabilityEngine deployed to:", engineAddress);
 
-    // 4. Configuration
-    console.log("🔗 Configuring Permissions...");
+    console.log(`   ✓ StabilityEngine: ${engineAddress}\n`);
 
-    // Link Token to Engine (Give Minter Role)
-    const tx = await token.setStabilityEngine(engineAddress);
-    await tx.wait();
-    console.log("   -> StabilityEngine granted MINTER_ROLE on NateProtocol");
+    // ========== STEP 4: Configure Token <-> Engine ==========
+    console.log("─────────────────────────────────────────────────────────────────");
+    console.log("  STEP 4: Configuring Token <-> Engine");
+    console.log("─────────────────────────────────────────────────────────────────");
 
-    console.log("\n🎉 Deployment Complete!");
-    console.log("--------------------------------------------------");
-    console.log(`LifeOracle:      ${oracleAddress}`);
-    console.log(`NateProtocol:    ${tokenAddress}`);
-    console.log(`StabilityEngine: ${engineAddress}`);
-    console.log("--------------------------------------------------");
+    await token.setStabilityEngine(engineAddress);
+    console.log(`   ✓ Token.setStabilityEngine(${engineAddress})`);
+    console.log(`   ✓ StabilityEngine granted MINTER_ROLE\n`);
 
-    // 5. Verification
-    if (hre.network.name !== "hardhat" && hre.network.name !== "localhost") {
-        console.log("\n⏳ Waiting for 6 block confirmations needed for verification...");
-        // Wait for the last deployed contract (StabilityEngine)
-        // Ideally wait for all, but typically waiting on the last one is enough time for all if they were sequential
-        await engine.deploymentTransaction().wait(6);
+    // ========== STEP 5: Deploy GovernanceBoard (AI Layer) ==========
+    console.log("─────────────────────────────────────────────────────────────────");
+    console.log("  STEP 5: Deploying GovernanceBoard (AI Security)");
+    console.log("─────────────────────────────────────────────────────────────────");
 
-        console.log("🔍 Verifying contracts on Etherscan...");
+    const GovernanceBoard = await hre.ethers.getContractFactory("GovernanceBoard");
+    const board = await GovernanceBoard.deploy(engineAddress);
+    await board.waitForDeployment();
+    const boardAddress = await board.getAddress();
 
-        const verify = async (address, args) => {
-            try {
-                await hre.run("verify:verify", {
-                    address: address,
-                    constructorArguments: args,
-                });
-            } catch (e) {
-                console.log(`❌ Verification failed for ${address}:`, e.message);
-            }
-        };
+    console.log(`   ✓ GovernanceBoard: ${boardAddress}\n`);
 
-        await verify(oracleAddress, []);
-        await verify(tokenAddress, [deployer.address]);
-        await verify(engineAddress, [tokenAddress, oracleAddress]);
-    }
+    // ========== STEP 6: Transfer Engine Ownership to Board ==========
+    console.log("─────────────────────────────────────────────────────────────────");
+    console.log("  STEP 6: Transferring Engine Ownership to Board");
+    console.log("─────────────────────────────────────────────────────────────────");
+
+    await engine.transferOwnership(boardAddress);
+    console.log(`   ✓ StabilityEngine.owner = GovernanceBoard`);
+    console.log(`   ✓ All future mints require AI approval\n`);
+
+    // ========== DEPLOYMENT COMPLETE ==========
+    console.log("╔══════════════════════════════════════════════════════════════╗");
+    console.log("║           ✅ DEPLOYMENT COMPLETE                              ║");
+    console.log("╚══════════════════════════════════════════════════════════════╝\n");
+
+    console.log("📋 CONTRACT ADDRESSES:");
+    console.log(`   LifeOracleV2:     ${oracleAddress}`);
+    console.log(`   NateProtocol:     ${tokenAddress}`);
+    console.log(`   StabilityEngine:  ${engineAddress}`);
+    console.log(`   GovernanceBoard:  ${boardAddress}\n`);
+
+    console.log("⚠️  NEXT STEPS:");
+    console.log("   1. Verify contracts on Etherscan");
+    console.log("   2. Create Chainlink Functions Subscription");
+    console.log("   3. Add LifeOracle as Consumer");
+    console.log("   4. Fund subscription with LINK");
+    console.log("   5. Initialize Uniswap V3 pool (run init_uniswap_v3.js)");
+    console.log();
+
+    // Save deployment addresses
+    const deployment = {
+        network: hre.network.name,
+        timestamp: new Date().toISOString(),
+        deployer: deployer.address,
+        contracts: {
+            LifeOracleV2: oracleAddress,
+            NateProtocol: tokenAddress,
+            StabilityEngine: engineAddress,
+            GovernanceBoard: boardAddress
+        }
+    };
+
+    const fs = require('fs');
+    fs.writeFileSync(
+        `deployment-${hre.network.name}.json`,
+        JSON.stringify(deployment, null, 2)
+    );
+    console.log(`📝 Deployment info saved to deployment-${hre.network.name}.json\n`);
 }
 
 main().catch((error) => {

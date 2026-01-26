@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nate Protocol - Livestream Overlay</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts for Cyberpunk/Tech look -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="overlay-container">
+        <!-- Top Bar: Price & Market Cap -->
+        <div class="widget top-bar">
+            <div class="metric">
+                <span class="label">NATE/USD</span>
+                <span class="value price-up">$1.05</span>
+            </div>
+            <div class="metric">
+                <span class="label">MKT CAP</span>
+                <span class="value">$185,420</span>
+            </div>
+            <div class="metric">
+                <span class="label">COLLATERAL</span>
+                <span class="value">185%</span>
+            </div>
+        </div>
+
+        <!-- Sidebar: Bio-Metrics -->
+        <div class="widget sidebar">
+            <div class="bio-metric">
+                <div class="icon">❤️</div>
+                <div class="data">
+                    <span class="label">HEART RATE</span>
+                    <span class="value" id="heart-rate">58 <span class="unit">BPM</span></span>
+                </div>
+            </div>
+            <div class="bio-metric">
+                <div class="icon">🧠</div>
+                <div class="data">
+                    <span class="label">DEEP WORK</span>
+                    <span class="value" id="deep-work">03:45</span>
+                </div>
+            </div>
+            <div class="bio-metric">
+                <div class="icon">🔥</div>
+                <div class="data">
+                    <span class="label">STREAK</span>
+                    <span class="value">14 <span class="unit">DAYS</span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Bar: Current Task -->
+        <div class="widget bottom-bar">
+            <span class="label">CURRENT OBJECTIVE:</span>
+            <span class="value typing-effect">DEPLOYING PHASE 4 TO MAINNET_</span>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
