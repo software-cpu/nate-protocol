@@ -68,7 +68,7 @@ describe("GovernanceBoard PID Control", function () {
         await nateToken.mint(user1.address, ethers.parseEther("100"));
 
         await nateToken.connect(user1).approve(await taskMarket.getAddress(), ethers.parseEther("100"));
-        await taskMarket.connect(user1).placeBet(taskId, true, ethers.parseEther("50")); // 50 NATE on YES
+        await taskMarket.connect(user1).bet(taskId, true, ethers.parseEther("50")); // 50 NATE on YES
 
         // 3. Request Mint in GovernanceBoard
         const mintAmount = ethers.parseEther("1000");
@@ -105,8 +105,10 @@ describe("GovernanceBoard PID Control", function () {
         await nateToken.connect(user1).approve(await taskMarket.getAddress(), ethers.parseEther("100"));
         await nateToken.connect(user2).approve(await taskMarket.getAddress(), ethers.parseEther("100"));
 
-        await taskMarket.connect(user1).placeBet(taskId, true, ethers.parseEther("10")); // 10 YES
-        await taskMarket.connect(user2).placeBet(taskId, false, ethers.parseEther("90")); // 90 NO
+        await nateToken.connect(user2).approve(await taskMarket.getAddress(), ethers.parseEther("100"));
+
+        await taskMarket.connect(user1).bet(taskId, true, ethers.parseEther("10")); // 10 YES
+        await taskMarket.connect(user2).bet(taskId, false, ethers.parseEther("90")); // 90 NO
         // Confidence ~ 10%
 
         // 3. Request Mint
