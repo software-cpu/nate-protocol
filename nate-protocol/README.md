@@ -71,9 +71,9 @@ npx hardhat run scripts/demo_local.js
 - [x] deployed `StabilityEngine` (Human QE Logic)
 - [x] Localhost Proof-of-Concept
 
-### Phase 2: Decentralization (Next)
-- [ ] **Chainlink Functions**: Upgrade Oracle to fetch data directly from API APIs (Decentralized Verification).
-- [ ] **Sepolia Testnet**: Public beta testing.
+### Phase 2: Decentralization (Current)
+- [x] **Chainlink Functions**: `LifeOracleV2.sol` fetches Bio-Data via decentralized oracle.
+- [~] **Sepolia Testnet**: Awaiting funds for deployment.
 
 ### Phase 3: Mainnet & The Show
 - [ ] Security Audit.

@@ -41,16 +41,21 @@ let dailyValueUSD = (deepWorkHours * BASE_HOURLY_RATE) * sleepMultiplier * strea
 // Add Social Value
 dailyValueUSD += (socialScore / 1000); // $15 for viral reach
 
+// Future Earnings (e.g., from CRM/Contract API)
+const futureEarnings = 5000; // $5000 projected
+
 // Convert to Wei (1e18)
 // Value / ETH_PRICE * 1e18
 const weiValue = BigInt(Math.floor((dailyValueUSD / ETH_PRICE) * 1e18));
+const futureEarningsWei = BigInt(Math.floor((futureEarnings / ETH_PRICE) * 1e18));
 
 console.log(`Daily Value USD: $${dailyValueUSD.toFixed(2)}`);
 console.log(`Wei Value: ${weiValue.toString()}`);
+console.log(`Future Earnings: $${futureEarnings}`);
 
 // ==================================================================
 // 3. ENCODE RESPONSE
-// Contract expects: (uint256, uint8, uint8, uint8, uint16, uint256)
+// Contract expects: (uint256, uint8, uint8, uint8, uint16, uint256, uint256)
 // We must manually ABI encode this since ethers isn't available by default.
 // ==================================================================
 
@@ -67,6 +72,7 @@ const encoded =
     to32ByteHex(restingHeartRate) +
     to32ByteHex(deepWorkHours) +
     to32ByteHex(commitStreak) +
-    to32ByteHex(socialScore);
+    to32ByteHex(socialScore) +
+    to32ByteHex(futureEarningsWei);
 
 return Buffer.from(encoded, 'hex');

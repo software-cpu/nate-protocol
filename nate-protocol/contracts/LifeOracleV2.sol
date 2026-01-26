@@ -26,12 +26,13 @@ contract LifeOracleV2 is FunctionsClient, ConfirmedOwner {
 
     // The Tangible Metrics
     struct QuantifiedSelf {
-        uint256 totalValue;      // The final calculate monetary value (18 decimals)
-        uint8 sleepScore;        // 0-100
-        uint8 restingHeartRate;  // bpm
-        uint8 deepWorkHours;     // hours
+        uint256 totalValue;        // The final calculated monetary value (18 decimals)
+        uint8 sleepScore;          // 0-100
+        uint8 restingHeartRate;    // bpm
+        uint8 deepWorkHours;       // hours
         uint16 gitHubCommitStreak; // days
         uint256 socialImpactScore; // aggregate score
+        uint256 futureEarnings;    // projected contracts/revenue
         uint256 lastUpdate;
     }
 
@@ -104,15 +105,16 @@ contract LifeOracleV2 is FunctionsClient, ConfirmedOwner {
         if (response.length > 0) {
             // Decode the response
             // Expected encoding from JS: 
-            // abi.encode(totalValue, sleep, rhr, work, streak, social)
+            // abi.encode(totalValue, sleep, rhr, work, streak, social, futureEarnings)
             (
                 uint256 _totalValue,
                 uint8 _sleep,
                 uint8 _rhr,
                 uint8 _work,
                 uint16 _streak,
-                uint256 _social
-            ) = abi.decode(response, (uint256, uint8, uint8, uint8, uint16, uint256));
+                uint256 _social,
+                uint256 _futureEarnings
+            ) = abi.decode(response, (uint256, uint8, uint8, uint8, uint16, uint256, uint256));
 
             metrics = QuantifiedSelf({
                 totalValue: _totalValue,
@@ -121,6 +123,7 @@ contract LifeOracleV2 is FunctionsClient, ConfirmedOwner {
                 deepWorkHours: _work,
                 gitHubCommitStreak: _streak,
                 socialImpactScore: _social,
+                futureEarnings: _futureEarnings,
                 lastUpdate: block.timestamp
             });
 
