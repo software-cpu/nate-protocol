@@ -94,6 +94,18 @@ async function main() {
     console.log(`   ✓ StabilityEngine.owner = GovernanceBoard`);
     console.log(`   ✓ All future mints require AI approval\n`);
 
+    // ========== STEP 7: Deploy TaskMarket (Prediction Market) ==========
+    console.log("─────────────────────────────────────────────────────────────────");
+    console.log("  STEP 7: Deploying TaskMarket (Prediction Market)");
+    console.log("─────────────────────────────────────────────────────────────────");
+
+    const TaskMarket = await hre.ethers.getContractFactory("TaskMarket");
+    const market = await TaskMarket.deploy(tokenAddress, oracleAddress);
+    await market.waitForDeployment();
+    const marketAddress = await market.getAddress();
+
+    console.log(`   ✓ TaskMarket: ${marketAddress}\n`);
+
     // ========== DEPLOYMENT COMPLETE ==========
     console.log("╔══════════════════════════════════════════════════════════════╗");
     console.log("║           ✅ DEPLOYMENT COMPLETE                              ║");
@@ -103,7 +115,8 @@ async function main() {
     console.log(`   LifeOracleV2:     ${oracleAddress}`);
     console.log(`   NateProtocol:     ${tokenAddress}`);
     console.log(`   StabilityEngine:  ${engineAddress}`);
-    console.log(`   GovernanceBoard:  ${boardAddress}\n`);
+    console.log(`   GovernanceBoard:  ${boardAddress}`);
+    console.log(`   TaskMarket:       ${marketAddress}\n`);
 
     console.log("⚠️  NEXT STEPS:");
     console.log("   1. Verify contracts on Etherscan");
@@ -122,7 +135,9 @@ async function main() {
             LifeOracleV2: oracleAddress,
             NateProtocol: tokenAddress,
             StabilityEngine: engineAddress,
-            GovernanceBoard: boardAddress
+            StabilityEngine: engineAddress,
+            GovernanceBoard: boardAddress,
+            TaskMarket: marketAddress
         }
     };
 
