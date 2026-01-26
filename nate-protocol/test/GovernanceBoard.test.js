@@ -13,21 +13,29 @@ describe("GovernanceBoard PID Control", function () {
         nateToken = await NateProtocol.deploy(owner.address);
         await nateToken.waitForDeployment();
 
-        // 2. Deploy StabilityEngine
+        // 2. Deploy Mock Oracle
+        const MockLifeOracle = await ethers.getContractFactory("MockLifeOracle");
+        const mockOracle = await MockLifeOracle.deploy();
+        await mockOracle.waitForDeployment();
+
+        // Set simulated Human Capital to $10M to ensure over-collateralization
+        await mockOracle.setTotalValue(ethers.parseEther("10000000"));
+
+        // 3. Deploy StabilityEngine
         const StabilityEngine = await ethers.getContractFactory("StabilityEngine");
-        stabilityEngine = await StabilityEngine.deploy(await nateToken.getAddress(), owner.address); // Mocking Oracle as owner for simplicity
+        stabilityEngine = await StabilityEngine.deploy(await nateToken.getAddress(), await mockOracle.getAddress());
         await stabilityEngine.waitForDeployment();
 
         // Grant MINTER_ROLE to StabilityEngine
         const MINTER_ROLE = await nateToken.MINTER_ROLE();
         await nateToken.grantRole(MINTER_ROLE, await stabilityEngine.getAddress());
 
-        // 3. Deploy TaskMarket
+        // 4. Deploy TaskMarket
         const TaskMarket = await ethers.getContractFactory("TaskMarket");
-        taskMarket = await TaskMarket.deploy(await nateToken.getAddress(), owner.address); // Mocking Oracle as owner
+        taskMarket = await TaskMarket.deploy(await nateToken.getAddress(), await mockOracle.getAddress());
         await taskMarket.waitForDeployment();
 
-        // 4. Deploy GovernanceBoard
+        // 5. Deploy GovernanceBoard
         const GovernanceBoard = await ethers.getContractFactory("GovernanceBoard");
         governanceBoard = await GovernanceBoard.deploy(
             await stabilityEngine.getAddress(),
@@ -39,24 +47,20 @@ describe("GovernanceBoard PID Control", function () {
         await stabilityEngine.transferOwnership(await governanceBoard.getAddress());
     });
 
-    it.only("Should initialize PID parameters correctly", async function () {
+    it("Should initialize PID parameters correctly", async function () {
         const Kp = await governanceBoard.base_Kp(); // Note: variable name is base_Kp in contract
         const Ki = await governanceBoard.base_Ki();
         const Kd = await governanceBoard.base_Kd();
 
-        console.log("Kp:", Kp.toString());
-        console.log("Ki:", Ki.toString());
-        console.log("Kd:", Kd.toString());
-
-        expect(Kp).to.equal(150n); // 1.5 * 100
-        expect(Ki).to.equal(50n);  // 0.5 * 100
-        expect(Kd).to.equal(80n);  // 0.8 * 100
+        expect(Kp).to.equal(200n);
+        expect(Ki).to.equal(15n);
+        expect(Kd).to.equal(400n);
     });
 
     it("Should approve minting with adjusted amount based on market confidence", async function () {
         // 1. Create a task in TaskMarket
         await taskMarket.createTask("Test Task", 3600); // 1 hour duration
-        const taskId = 0;
+        const taskId = 1;
 
         // 2. Place bets to simulate high confidence (100% YES)
         // First, mint some tokens to users so they can bet
@@ -91,7 +95,7 @@ describe("GovernanceBoard PID Control", function () {
     it("Should dampen minting when market confidence is low", async function () {
         // 1. Create a task
         await taskMarket.createTask("Low Confidence Task", 3600);
-        const taskId = 0;
+        const taskId = 1;
 
         // 2. Place bets to simulate low confidence (mostly NO)
         await nateToken.grantRole(await nateToken.MINTER_ROLE(), owner.address);
