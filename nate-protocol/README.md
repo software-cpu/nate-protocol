@@ -20,10 +20,10 @@ We are documenting the entire journey from concept to mainnet launch. This is an
 The system consists of three core components working in harmony:
 
 ### 1. LifeOracle (The Data Source)
-Tracks the real-world metrics that back the currency.
-- **Time Value**: Availability and hourly worth.
-- **Skill Vectors**: Verified capabilities (Coding, Strategy, etc.).
-- **Social Capital**: Network reach and engagement.
+Tracks the real-world metrics that back the currency via **Chainlink Functions**.
+- **Bio-Data**: Sleep Score (0-100) & Resting Heart Rate (Health = Wealth).
+- **Productivity**: Deep Work Hours & GitHub Commit Streaks (Consistency Multipliers).
+- **Virality**: Social Impact Score (Viral reach directly verified via API).
 - **Future Earnings**: Projected contracts and revenue.
 
 ### 2. Stability Engine (The Central Bank)

@@ -24,6 +24,7 @@
   "author": "Nate",
   "license": "MIT",
   "devDependencies": {
+    "@chainlink/functions-toolkit": "^0.3.2",
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",
     "hardhat": "^2.19.0"
   },
