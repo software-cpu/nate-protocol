@@ -91,6 +91,10 @@ contract GovernanceBoard is Ownable {
     /**
      * @notice Execute the Nonlinear Control Law
      */
+    // Safety Bounds
+    int256 public constant MAX_INTEGRAL = 100000;
+    int256 public constant MAX_GAIN = 50000;
+
     function approveMint(uint256 _requestId) external onlyOwner {
         MintRequest storage req = requests[_requestId];
         require(!req.executed, "Executed");
@@ -108,8 +112,13 @@ contract GovernanceBoard is Ownable {
         
         // 3. Integral Term (Leaky Integrator / Exponential Decay)
         // I(t) = (I(t-1) * λ) + e(t)
-        // This removes the need for arbitrary clamping. History fades naturally.
-        integralState = (integralState * memory_decay) / PRECISION + error;
+        int256 nextIntegral = (integralState * memory_decay) / PRECISION + error;
+        
+        // Anti-Windup Clamping
+        if (nextIntegral > MAX_INTEGRAL) nextIntegral = MAX_INTEGRAL;
+        else if (nextIntegral < -MAX_INTEGRAL) nextIntegral = -MAX_INTEGRAL;
+        
+        integralState = nextIntegral;
         int256 I = (base_Ki * integralState) / 100;
         
         // 4. Derivative Term (Adaptive Damping)
@@ -118,9 +127,11 @@ contract GovernanceBoard is Ownable {
         
         // Nonlinear Gain Scheduling:
         // Kd_effective = Kd_base * (1 + |derivative| * scaling)
-        // If derivative is high (crash), gain increases to apply brakes harder.
         int256 volatility = derivative >= 0 ? derivative : -derivative;
         int256 adaptive_gain = base_Kd + (volatility * volatility * nonlinearity_factor) / 100;
+        
+        // Safety Clamping for Gain
+        if (adaptive_gain > MAX_GAIN) adaptive_gain = MAX_GAIN;
         
         int256 D = (adaptive_gain * derivative) / 100;
         
