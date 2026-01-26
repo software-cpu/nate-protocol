@@ -6,8 +6,8 @@ import "./StabilityEngine.sol";
 import "./TaskMarket.sol";
 
 /**
- * @title GovernanceBoard (Phase 7: Nonlinear Adaptive Control)
- * @notice The "Algo-Board" utilizing Advanced Control Theory.
+ * @title GovernanceBoard
+ * @notice Governance mechanism utilizing Control Theory.
  * @dev Implements an Adaptive PID Controller with Exponential Decay Memory.
  * 
  * ## System Dynamics

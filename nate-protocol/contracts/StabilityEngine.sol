@@ -13,14 +13,9 @@ interface INateToken is IERC20 {
 
 /**
  * @title StabilityEngine
- * @dev The "Central Bank" logic for $NATE.
- * Manages the Collateral Ratio and authorizes minting based on Human + Liquid Capital.
- */
-/**
- * @title StabilityEngine
  * @notice The "Central Bank" logic for $NATE.
  * @dev Manages the Collateral Ratio and authorizes minting based on Human + Liquid Capital.
- * Implements "Human Quantitative Easing" where supply expands with Human Value.
+ * Implements mechanism where supply expands with Human Value.
  */
 contract StabilityEngine is Ownable, ReentrancyGuard {
 
@@ -61,8 +56,8 @@ contract StabilityEngine is Ownable, ReentrancyGuard {
      * Only checks that we remain over-collateralized.
      */
     /**
-     * @notice "Human Quantitative Easing"
-     * @dev Mint new NATE tokens against the rising value of Nate's life metrics.
+     * @notice Mint NATE Tokens
+     * @dev Mint new NATE tokens against the rising value of backing metrics.
      * Only checks that we remain over-collateralized.
      * @param _amount The amount of NATE to mint
      */
