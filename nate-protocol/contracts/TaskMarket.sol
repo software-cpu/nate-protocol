@@ -112,8 +112,23 @@ contract TaskMarket is Ownable, ReentrancyGuard {
     /**
      * @notice Alias for bet() for script compatibility
      */
-    function placeBet(uint256 _taskId, bool _supportYes, uint256 _amount) external {
-        this.bet(_taskId, _supportYes, _amount);
+    function placeBet(uint256 _taskId, bool _supportYes, uint256 _amount) external nonReentrant {
+        Task storage task = tasks[_taskId];
+        require(task.status == TaskStatus.OPEN, "Market not open");
+        require(block.timestamp < task.deadline, "Betting closed");
+        require(_amount > 0, "Amount must be > 0");
+
+        nateToken.transferFrom(msg.sender, address(this), _amount);
+
+        if (_supportYes) {
+            task.yesPool += _amount;
+            positions[_taskId][msg.sender].yesAmount += _amount;
+        } else {
+            task.noPool += _amount;
+            positions[_taskId][msg.sender].noAmount += _amount;
+        }
+
+        emit BetPlaced(_taskId, msg.sender, _supportYes, _amount);
     }
 
     /**

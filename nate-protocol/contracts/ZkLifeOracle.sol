@@ -76,7 +76,10 @@ contract ZkLifeOracle is LifeOracleV2 {
         // Sanity check: Don't allow claiming 1000 hours in one email
         require(hoursWorked > 0 && hoursWorked < 100, "Invalid hours range");
 
-        metrics.deepWorkHours += uint8(hoursWorked);
+        // Protect against uint8 overflow (max 255 hours)
+        uint8 newHours = metrics.deepWorkHours + uint8(hoursWorked);
+        require(newHours >= metrics.deepWorkHours, "Hours overflow");
+        metrics.deepWorkHours = newHours;
         
         // Calculate Value (e.g. $250/hr)
         uint256 valueAdd = (hoursWorked * 250 * 1e18);

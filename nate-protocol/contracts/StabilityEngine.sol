@@ -32,8 +32,7 @@ contract StabilityEngine is Ownable, ReentrancyGuard {
     // ETH Price Stub (Fixed for MVP - In production, use Chainlink AggregatorV3Interface)
     uint256 public constant ethPriceUSD = 2500 * 1e8; // $2500/ETH fixed
     
-    // Treasury Tracking
-    uint256 public totalLiquidETH;
+
     
     // Events
     event CollateralRatioUpdated(uint256 newRatio);
@@ -71,10 +70,6 @@ contract StabilityEngine is Ownable, ReentrancyGuard {
         emit Minted(msg.sender, _amount, projectedSupply);
     }
 
-    /**
-     * @dev Redeem NATE for ETH at $1.00 Peg.
-     * Burns NATE -> Sends equivalent ETH.
-     */
     /**
      * @notice Redeem NATE for ETH at $1.00 Peg.
      * @dev Burns NATE -> Sends equivalent ETH.
