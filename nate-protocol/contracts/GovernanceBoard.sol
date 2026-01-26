@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "hardhat/console.sol";
 import "./StabilityEngine.sol";
 import "./TaskMarket.sol";
 
@@ -96,8 +97,12 @@ contract GovernanceBoard is Ownable {
         require(!req.executed, "Executed");
         require(!req.vetoed, "Vetoed");
         
+        console.log("ApproveMint Request:", _requestId);
+        
         // 1. Comparison Unit (Error Calculation)
         (uint256 yesPercent, ) = market.getOdds(req.linkedTaskId);
+        console.log("YesPercent:", yesPercent);
+        
         int256 confidence = int256(yesPercent);
         int256 error = confidence - targetConfidence;
         
