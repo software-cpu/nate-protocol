@@ -160,18 +160,11 @@ contract MultiSigGovernance is Ownable {
         txn.executed = true;
         
         (bool success, ) = txn.destination.call{value: txn.value}(txn.data);
-        if (success)
+        if (success) {
             emit Execution(transactionId);
-        else {
+        } else {
             emit ExecutionFailure(transactionId);
-            txn.executed = false; // Allow retry? Or fail permanently? Typically fail.
-            // For safety, let's allow retry if it was a gas issue, but risk re-entrancy issues?
-            // Reentrancy guard not strictly needed if we follow CEI, but here we modify state 'executed=true' before call.
-            // If it fails, we set it back to false so it can be retried.
-            // However, typical MultiSig implementations separate execute from state.
-            // Let's keep it simple: if it fails, it throws event and stays unexecuted (executed=false).
-            // But wait, I set executed=true above.
-            txn.executed = false; 
+            txn.executed = false; // Allow retry
         }
     }
     

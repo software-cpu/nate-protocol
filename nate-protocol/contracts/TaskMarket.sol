@@ -110,6 +110,13 @@ contract TaskMarket is Ownable, ReentrancyGuard {
     }
 
     /**
+     * @notice Alias for bet() for script compatibility
+     */
+    function placeBet(uint256 _taskId, bool _supportYes, uint256 _amount) external {
+        this.bet(_taskId, _supportYes, _amount);
+    }
+
+    /**
      * @notice Resolve the market (Oracle Only)
      * @param _taskId The task ID
      * @param _outcome Did Nate do it? (True/False)
