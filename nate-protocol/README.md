@@ -1,148 +1,86 @@
-# $NATE Protocol
+# The Nate Protocol: The Living Stablecoin
 
-**Decentralized Human Execution Protocol - A Growth Token with a Hard Value Floor**
+> **"This isn't just DeFi—it's a statement about the future of work, self-sovereignty, and human value."**
 
-## Quick Start (Today!)
+The **Nate Protocol** ($NATE) is the world's first **Living Stablecoin**. Unlike traditional currencies backed by debt or fiat, $NATE is backed by **Human Capital**—the proven, verifiable productive capacity of a real person.
+
+It introduces **Human Quantitative Easing**: As Nate's value (skills, time, network, earnings) grows, the protocol mints new currency, creating a perpetually expanding economy that rewards its participants.
+
+---
+
+## 🎪 The Reality Show Strategy
+We are documenting the entire journey from concept to mainnet launch. This is an open experiment in **human tokenization**.
+- **Follow the Build**: Watch the "Living Stablecoin" series.
+- **Participate**: Holders don't just speculate; they govern, claim opportunities, and work directly with the issuer.
+
+---
+
+## 🏛️ Architecture
+
+The system consists of three core components working in harmony:
+
+### 1. LifeOracle (The Data Source)
+Tracks the real-world metrics that back the currency.
+- **Time Value**: Availability and hourly worth.
+- **Skill Vectors**: Verified capabilities (Coding, Strategy, etc.).
+- **Social Capital**: Network reach and engagement.
+- **Future Earnings**: Projected contracts and revenue.
+
+### 2. Stability Engine (The Central Bank)
+Manages the peg and minting logic.
+- **Human QE**: When Life Value > Supply * 150%, the engine mints new $NATE.
+- **Asset Backing**: Maintains a hybrid reserve of **Liquid Assets (ETH)** and **Human Assets**.
+- **Redemption**: Users can always burn $NATE for $1.00 worth of ETH (if liquid reserves permit), enforcing a hard value floor.
+
+### 3. $NATE Token (The Currency)
+- **Governance**: Stake to vote on opportunities and protocol parameters.
+- **Access**: Use $NATE to claim "Opportunities" (gigs/bounties posted by Nate).
+- **Payment**: The preferred medium of exchange for Nate's services.
+
+---
+
+## 🚀 Quick Start (Local Demo)
+
+Want to see the economy in action? Run the full simulation on your machine.
 
 ### Prerequisites
-- Node.js 18+ 
-- MetaMask wallet with Sepolia ETH (get free from [faucet](https://sepoliafaucet.com))
+- Node.js 18+
 
-### Step 1: Install Dependencies
+### Run the Demo
 ```bash
-cd nate-protocol
+# 1. Install dependencies
 npm install
+
+# 2. Run the Localhost Simulation
+npx hardhat run scripts/demo_local.js
 ```
 
-### Step 2: Compile Contract
-```bash
-npm run compile
-```
-
-### Step 3: Run Tests
-```bash
-npm test
-```
-You should see all 20+ tests pass ✅
-
-### Step 4: Deploy Locally (Test Environment)
-```bash
-# Terminal 1: Start local blockchain
-npm run node
-
-# Terminal 2: Deploy
-npm run deploy:local
-```
-
-### Step 5: Deploy to Sepolia Testnet
-```bash
-# 1. Copy environment template
-cp .env.example .env
-
-# 2. Edit .env with your values:
-#    - SEPOLIA_RPC_URL (get from Alchemy)
-#    - PRIVATE_KEY (from MetaMask)
-#    - ETHERSCAN_API_KEY (optional, for verification)
-
-# 3. Deploy
-npm run deploy:sepolia
-```
+**What happens in the demo?**
+1.  **Deployment**: Contracts are deployed to a local blockchain.
+2.  **Human QE**: Nate updates his stats -> System mints 1,000 $NATE.
+3.  **Economy**: Tokens are distributed and staked.
+4.  **Work**: A community member claims a job ("Build Frontend").
+5.  **Bank Run**: A user redeems $NATE for ETH, proving the peg works.
 
 ---
 
-## Architecture
+## 🗺️ Roadmap
 
-### Token Economics
-- **Fixed Supply**: 10,000,000 NATE (deflationary via buybacks)
-- **Distribution**: 50% Community / 30% Nate / 20% Reserve
-- **No Inflation**: Cannot mint after deployment
+### Phase 1: Foundation (Current)
+- [x] deployed `LifeOracle` (Trusted Reporter)
+- [x] deployed `StabilityEngine` (Human QE Logic)
+- [x] Localhost Proof-of-Concept
 
-### Revenue Flow
-```
-Revenue In → 20% Buyback & Burn
-           → 30% Treasury (backing)
-           → 50% Operator (income)
-```
+### Phase 2: Decentralization (Next)
+- [ ] **Chainlink Functions**: Upgrade Oracle to fetch data directly from API APIs (Decentralized Verification).
+- [ ] **Sepolia Testnet**: Public beta testing.
 
-### Core Features
-
-| Feature | Description |
-|---------|-------------|
-| **Opportunity Registry** | Log opportunities you won't take → Holders claim them |
-| **Revenue Router** | Automatic splits: buyback/treasury/operator |
-| **NAV Floor** | Human capital metrics establish minimum value |
-| **Staking** | Lock tokens for governance weight (up to 2x multiplier) |
-| **Dead Man's Switch** | If inactive 30 days → Council takes over |
+### Phase 3: Mainnet & The Show
+- [ ] Security Audit.
+- [ ] "Reality Show" Launch Strategy.
+- [ ] Genesis Mint.
 
 ---
 
-## Contract Functions
-
-### For Nate (Owner)
-```solidity
-logOpportunity(category, description, value)  // Share opportunities
-updateLifeMetrics(time, skill, network, earnings)  // Update backing
-executeBuyback(amount)  // Burn tokens from treasury
-withdrawTreasury(to, amount, reason)  // Access treasury
-releaseCommunityTokens(to, amount)  // Distribute community pool
-```
-
-### For Token Holders
-```solidity
-claimOpportunity(id)  // Claim an available opportunity
-stake(amount)  // Lock tokens for voting power
-unstake(amount)  // Withdraw staked tokens
-```
-
-### View Functions
-```solidity
-calculateNAV()  // Current net asset value per token
-getTotalBacking()  // Treasury + Human Capital
-getSystemStats()  // All stats in one call
-getActiveOpportunities()  // List claimable opportunities
-getVotingPower(user)  // User's governance weight
-timeToCrisis()  // Seconds until Dead Man's Switch activates
-```
-
----
-
-## File Structure
-```
-nate-protocol/
-├── contracts/
-│   └── NateProtocol.sol      # Main contract
-├── scripts/
-│   ├── deploy.js             # Deployment script
-│   └── interact.js           # Test interactions
-├── test/
-│   └── NateProtocol.test.js  # Full test suite
-├── hardhat.config.js
-├── package.json
-└── .env.example
-```
-
----
-
-## Next Steps After Deployment
-
-1. **Test Locally** → Run full test suite
-2. **Deploy Sepolia** → Real testnet with fake ETH
-3. **Update Frontend** → Swap contract address/ABI
-4. **Community Beta** → Small group test
-5. **Security Audit** → Before any real money
-6. **Mainnet** → Only after audit
-
----
-
-## Security Notes
-
-⚠️ **Before Mainnet:**
-- Get 2-3 professional audits
-- Run Slither/Mythril analysis
-- Bug bounty program
-- Legal review for securities compliance
-
----
-
-## License
+## 📜 License
 MIT
