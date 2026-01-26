@@ -51,5 +51,25 @@ npx hardhat run scripts/demo_local.js
 npm test
 ```
 
+## Contributing
+We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for setup instructions and [ARCHITECTURE.md](./ARCHITECTURE.md) for a deep dive into the system design.
+
+## Roadmap
+
+### Phase 1: Foundation (Complete)
+- [x] Oracle & Stability Engine
+- [x] Local Simulation
+- [x] Codebase Cleanup
+
+### Phase 2: User Experience (Current)
+- [x] Betting UI (React + Tailwind)
+- [ ] Task Creation UI Polish
+- [ ] Wallet Integration Tests
+
+### Phase 3: Decentralization
+- [ ] Sepolia Testnet Deployment
+- [ ] Chainlink Functions Integration
+- [ ] Auditor Review
+
 ## License
 MIT
