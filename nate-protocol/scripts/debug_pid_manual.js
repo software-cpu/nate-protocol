@@ -59,9 +59,18 @@ async function main() {
     await taskMarket.connect(user1).placeBet(taskId, true, ethers.parseEther("50"));
     console.log("User1 Bet YES 50");
 
-    // Check Odds
-    const odds = await taskMarket.getOdds(taskId);
-    console.log("Odds:", odds.toString()); // [100, 0]
+    // Check Stability Engine status
+    try {
+        const status = await stabilityEngine.getSystemStatus();
+        console.log("System Status:", {
+            supply: status.totalSupply.toString(),
+            totalValueUSD: status.totalValueUSD.toString(),
+            collateralRatio: status.collateralRatio.toString(),
+            liquidEth: status.liquidEth.toString()
+        });
+    } catch (e) {
+        console.error("Failed to get system status:", e.message);
+    }
 
     // 7. Request Mint
     const mintAmount = ethers.parseEther("1000");
