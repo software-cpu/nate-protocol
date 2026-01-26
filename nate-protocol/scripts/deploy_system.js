@@ -73,30 +73,9 @@ async function main() {
     console.log(`   ✓ Token.setStabilityEngine(${engineAddress})`);
     console.log(`   ✓ StabilityEngine granted MINTER_ROLE\n`);
 
-    // ========== STEP 5: Deploy GovernanceBoard (AI Layer) ==========
+    // ========== STEP 5: Deploy TaskMarket (Prediction Market) ==========
     console.log("─────────────────────────────────────────────────────────────────");
-    console.log("  STEP 5: Deploying GovernanceBoard (AI Security)");
-    console.log("─────────────────────────────────────────────────────────────────");
-
-    const GovernanceBoard = await hre.ethers.getContractFactory("GovernanceBoard");
-    const board = await GovernanceBoard.deploy(engineAddress);
-    await board.waitForDeployment();
-    const boardAddress = await board.getAddress();
-
-    console.log(`   ✓ GovernanceBoard: ${boardAddress}\n`);
-
-    // ========== STEP 6: Transfer Engine Ownership to Board ==========
-    console.log("─────────────────────────────────────────────────────────────────");
-    console.log("  STEP 6: Transferring Engine Ownership to Board");
-    console.log("─────────────────────────────────────────────────────────────────");
-
-    await engine.transferOwnership(boardAddress);
-    console.log(`   ✓ StabilityEngine.owner = GovernanceBoard`);
-    console.log(`   ✓ All future mints require AI approval\n`);
-
-    // ========== STEP 7: Deploy TaskMarket (Prediction Market) ==========
-    console.log("─────────────────────────────────────────────────────────────────");
-    console.log("  STEP 7: Deploying TaskMarket (Prediction Market)");
+    console.log("  STEP 5: Deploying TaskMarket (Prediction Market)");
     console.log("─────────────────────────────────────────────────────────────────");
 
     const TaskMarket = await hre.ethers.getContractFactory("TaskMarket");
@@ -105,6 +84,28 @@ async function main() {
     const marketAddress = await market.getAddress();
 
     console.log(`   ✓ TaskMarket: ${marketAddress}\n`);
+
+    // ========== STEP 6: Deploy GovernanceBoard (AI + Market Signals) ==========
+    console.log("─────────────────────────────────────────────────────────────────");
+    console.log("  STEP 6: Deploying GovernanceBoard (AI + Sigmoid Market Signals)");
+    console.log("─────────────────────────────────────────────────────────────────");
+
+    const GovernanceBoard = await hre.ethers.getContractFactory("GovernanceBoard");
+    const board = await GovernanceBoard.deploy(engineAddress, marketAddress);
+    await board.waitForDeployment();
+    const boardAddress = await board.getAddress();
+
+    console.log(`   ✓ GovernanceBoard: ${boardAddress}`);
+    console.log(`   ✓ Board reads market signals via sigmoid function\n`);
+
+    // ========== STEP 7: Transfer Engine Ownership to Board ==========
+    console.log("─────────────────────────────────────────────────────────────────");
+    console.log("  STEP 7: Transferring Engine Ownership to Board");
+    console.log("─────────────────────────────────────────────────────────────────");
+
+    await engine.transferOwnership(boardAddress);
+    console.log(`   ✓ StabilityEngine.owner = GovernanceBoard`);
+    console.log(`   ✓ All future mints require AI + Market approval\n`);
 
     // ========== DEPLOYMENT COMPLETE ==========
     console.log("╔══════════════════════════════════════════════════════════════╗");
