@@ -41,9 +41,16 @@ Manages the peg and minting logic.
 - **Zero-Knowledge Proofs**: Nate can prove productivity (e.g., "I worked 6 hours") without revealing client names or project details.
 - **Replay Protection**: Each proof can only be used once via nullifier tracking.
 
-### 5. GovernanceBoard (Phase 3: AI Security)
-- **Algorithmic Oversight**: Large mints require approval from an AI Agent that analyzes market sentiment.
-- **Veto Power**: The Board can reject mints if conditions are unfavorable.
+### 5. GovernanceBoard (Phase 6: PID Control Theory)
+- **PID Controller**: Uses **Proportional-Integral-Derivative** logic to stabilize trust.
+- **Market Signals**: Reads confidence from `TaskMarket` and continuously adjusts minting capacity.
+    - *Proportional*: "Market hates this -> Cut Salary."
+    - *Integral*: "Consistency over time -> Salary Bonus."
+    - *Derivative*: "Crash Detection -> Emergency Stop."
+
+### 6. TaskMarket (Phase 5: Prediction)
+- **Polymarket for Decisions**: Holders bet on Nate's daily output.
+- **Truth Machine**: Investors predict "Will Nate check in code today?" and winners take the pool.
 
 ---
 
@@ -107,9 +114,15 @@ npm run morning
 - [~] **Demo Script**: `demo_autonomous.js` (partial integration).
 
 ### Phase 4: Mainnet & The Show
-- [ ] Security Audit.
-- [ ] "Reality Show" Launch Strategy.
-- [ ] Genesis Mint.
+- [x] **Live Overlay**: `overlay/` for streaming bio-metrics.
+- [x] **Launch Strategy**: Deployment & Liquidity plan ready.
+
+### Phase 5: The Market-Driven Human
+- [x] **Task Market**: `TaskMarket.sol` for investor voting.
+- [ ] **Frontend**: `nate-market-ui` (Beta).
+
+### Phase 6: Stability (2026 Vision)
+- [x] **PID Governance**: Differential equations control supply expansion.
 
 ---
 

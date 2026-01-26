@@ -6,34 +6,29 @@ import "./StabilityEngine.sol";
 import "./TaskMarket.sol";
 
 /**
- * @title GovernanceBoard (Phase 5: Market-Driven)
- * @notice The "Algo-Board" that governs the Stability Engine using market signals.
- * @dev Uses a sigmoid function to scale mints based on market confidence.
+ * @title GovernanceBoard (Phase 6: PID Control)
+ * @notice The "Algo-Board" that governs the Stability Engine using Control Theory.
+ * @dev Implements a Proportional-Integral-Derivative (PID) Controller to stabilize Trust.
  * 
- * ## Mathematical Model
- * The mint multiplier is calculated using a logistic (sigmoid) function:
+ * ## Differential Equation
+ * u(t) = Kp * e(t) + Ki * ∫e(t)dt + Kd * de(t)/dt
  * 
- *   m(c) = 1 / (1 + e^(-k * (c - threshold)))
- * 
- * Where:
- *   c = market confidence (0-100%)
- *   threshold = 70 (center of the S-curve)
- *   k = steepness parameter (higher = sharper cutoff)
- * 
- * This creates a smooth, continuous function where:
- *   - c < 50%: multiplier approaches 0 (reject mint)
- *   - c = 70%: multiplier = 0.5 (50% of requested mint)
- *   - c > 90%: multiplier approaches 1 (full mint)
+ * Where e(t) = Market Confidence - Target (90%)
  */
 contract GovernanceBoard is Ownable {
 
     StabilityEngine public engine;
     TaskMarket public market;
     
-    // === Nonlinear Dynamics Parameters ===
-    uint256 public constant CONFIDENCE_THRESHOLD = 70;  // Center of sigmoid (%)
-    uint256 public constant STEEPNESS = 15;             // k parameter (scaled by 100)
-    uint256 public constant MIN_CONFIDENCE = 50;        // Hard floor - reject below this
+    // === PID Parameters (Scaled by 100) ===
+    int256 public K_p = 200;  // Proportional Gain (Response Strength)
+    int256 public K_i = 10;   // Integral Gain (Memory / Consistency Reward)
+    int256 public K_d = 500;  // Derivative Gain (Damping / Crash Prevention)
+    
+    // === Control State ===
+    int256 public targetConfidence = 90; // We want 90% confidence always
+    int256 public integralError;         // Accumulated error over time
+    int256 public prevError;             // Error from last check
     
     // Config
     uint256 public constant MINT_DELAY = 1 hours;
@@ -42,7 +37,7 @@ contract GovernanceBoard is Ownable {
     struct MintRequest {
         uint256 amount;
         uint256 timestamp;
-        uint256 linkedTaskId;  // The task that justifies this mint
+        uint256 linkedTaskId;
         bool executed;
         bool vetoed;
     }
@@ -52,19 +47,23 @@ contract GovernanceBoard is Ownable {
     event MintRequested(uint256 indexed requestId, uint256 amount, uint256 taskId);
     event MintApproved(uint256 indexed requestId, address indexed aiAgent, uint256 scaledAmount);
     event MintVetoed(uint256 indexed requestId, string reason);
+    event PIDUpdate(int256 error, int256 p, int256 i, int256 d, uint256 adjustment);
 
     constructor(address _engine, address _market) Ownable(msg.sender) {
         engine = StabilityEngine(payable(_engine));
         market = TaskMarket(_market);
     }
 
+    // ============ Admin Tuning ============
+    
+    function setPIDGains(int256 _kp, int256 _ki, int256 _kd) external onlyOwner {
+        K_p = _kp;
+        K_i = _ki;
+        K_d = _kd;
+    }
+
     // ============ User Actions ============
 
-    /**
-     * @notice Request a mint, linked to a completed task in the prediction market.
-     * @param _amount Requested mint amount
-     * @param _taskId The TaskMarket task ID that justifies this mint
-     */
     function requestMint(uint256 _amount, uint256 _taskId) external onlyOwner {
         requests.push(MintRequest({
             amount: _amount,
@@ -80,79 +79,69 @@ contract GovernanceBoard is Ownable {
     // ============ AI Agent Actions ============
 
     /**
-     * @notice Approve a mint based on market confidence.
-     * @dev The actual minted amount is scaled by the sigmoid function.
-     * @param _requestId The request to approve
+     * @notice Approve a mint using PID Control Logic.
+     * @dev Calculates error terms and adjusts the mint amount dynamically.
      */
     function approveMint(uint256 _requestId) external onlyOwner {
         MintRequest storage req = requests[_requestId];
         require(!req.executed, "Already executed");
         require(!req.vetoed, "Vetoed");
         
-        // Get market confidence for the linked task
+        // 1. Get Feedback (Market Confidence)
         (uint256 yesPercent, ) = market.getOdds(req.linkedTaskId);
+        int256 currentConfidence = int256(yesPercent);
         
-        // Hard floor check
-        require(yesPercent >= MIN_CONFIDENCE, "Market confidence too low");
+        // 2. Calculate Error
+        int256 error = currentConfidence - targetConfidence;
         
-        // Calculate mint multiplier using sigmoid approximation
-        uint256 multiplier = _sigmoid(yesPercent);
+        // 3. PID Calcs
+        // Proportional
+        int256 P = (K_p * error) / 100;
         
-        // Scale the mint amount
-        uint256 scaledAmount = (req.amount * multiplier) / 100;
+        // Integral (Accumulate error, capped to prevent windup)
+        integralError += error;
+        // Clamp integral to +/- 1000 to prevent runaway
+        if (integralError > 1000) integralError = 1000;
+        if (integralError < -1000) integralError = -1000;
         
-        // Execute
-        req.executed = true;
-        engine.mint(scaledAmount);
+        int256 I = (K_i * integralError) / 100;
         
-        // Transfer to owner
-        INateToken(address(engine.nateToken())).transfer(owner(), scaledAmount);
-
-        emit MintApproved(_requestId, msg.sender, scaledAmount);
+        // Derivative
+        int256 derivative = error - prevError;
+        int256 D = (K_d * derivative) / 100;
+        
+        prevError = error;
+        
+        // 4. Calculate Control Output (Adjustment Factor)
+        // Baseline is 100% (if error is 0). 
+        // Example: If output is -20, we mint 80%. If output is +10, we mint 110% (bonus).
+        int256 adjustment = P + I + D;
+        int256 finalPercent = 100 + adjustment;
+        
+        // Clamp result (0% to 150%)
+        if (finalPercent < 0) finalPercent = 0;
+        if (finalPercent > 150) finalPercent = 150;
+        
+        emit PIDUpdate(error, P, I, D, uint256(finalPercent));
+        
+        // 5. Execute
+        uint256 scaledAmount = (req.amount * uint256(finalPercent)) / 100;
+        
+        if (scaledAmount > 0) {
+            req.executed = true;
+            engine.mint(scaledAmount);
+            INateToken(address(engine.nateToken())).transfer(owner(), scaledAmount);
+            emit MintApproved(_requestId, msg.sender, scaledAmount);
+        } else {
+            // Effectively vetoed by math
+             emit MintVetoed(_requestId, "PID Controller rejected mint (0%)");
+             req.vetoed = true; // Mark as processed but rejected
+        }
     }
 
     function vetoMint(uint256 _requestId, string calldata _reason) external onlyOwner {
         MintRequest storage req = requests[_requestId];
         req.vetoed = true;
         emit MintVetoed(_requestId, _reason);
-    }
-
-    // ============ Nonlinear Math ============
-
-    /**
-     * @notice Approximates sigmoid function: 1 / (1 + e^(-k(x - threshold)))
-     * @dev Uses polynomial approximation since Solidity has no exp().
-     * Returns value 0-100 representing the multiplier percentage.
-     * 
-     * The approximation uses a piecewise linear + quadratic hybrid:
-     *   - Below threshold: grows slowly (quadratic)
-     *   - Above threshold: accelerates toward 100 (inverse quadratic)
-     * 
-     * This mimics the S-curve behavior of a true sigmoid.
-     */
-    function _sigmoid(uint256 confidence) internal pure returns (uint256) {
-        if (confidence <= 50) {
-            // Quadratic growth: (c/50)^2 * 25 -> gives 0-25 range for c 0-50
-            return (confidence * confidence) / 100;
-        } else if (confidence <= CONFIDENCE_THRESHOLD) {
-            // Linear transition zone: 25 -> 50 as c goes 50 -> 70
-            // Slope = 25 / 20 = 1.25 per percent
-            return 25 + ((confidence - 50) * 125) / 100;
-        } else if (confidence <= 90) {
-            // Accelerating zone: 50 -> 90 as c goes 70 -> 90
-            // Steeper climb
-            return 50 + ((confidence - 70) * 200) / 100;
-        } else {
-            // Saturation zone: 90 -> 100 as c goes 90 -> 100
-            // Slow approach to max
-            return 90 + (confidence - 90);
-        }
-    }
-
-    /**
-     * @notice Get the current multiplier for a given confidence (for UI preview)
-     */
-    function getMultiplier(uint256 confidence) external pure returns (uint256) {
-        return _sigmoid(confidence);
     }
 }
