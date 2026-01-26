@@ -12,7 +12,8 @@
     "deploy:sepolia": "hardhat run scripts/deploy_system.js --network sepolia",
     "deploy:mainnet": "npx hardhat run scripts/deploy.js --network mainnet",
     "verify": "npx hardhat verify --network sepolia",
-    "clean": "npx hardhat clean"
+    "clean": "npx hardhat clean",
+    "morning": "npx hardhat run scripts/nate_dashboard.js"
   },
   "keywords": [
     "ethereum",
