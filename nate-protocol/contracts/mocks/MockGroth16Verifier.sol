@@ -11,7 +11,7 @@ contract MockGroth16Verifier {
         uint256[2] calldata _pA,
         uint256[2][2] calldata _pB,
         uint256[2] calldata _pC,
-        uint256[2] calldata _pubSignals
+        uint256[4] calldata _pubSignals
     ) external view returns (bool) {
         // In reality, this performs Elliptic Curve Pairing checks (Pairing.sol)
         // For the demo, we trust the math works (since we can't compile .circom locally)
