@@ -59,7 +59,7 @@ describe("GovernanceBoard PID Control", function () {
 
     it("Should approve minting with adjusted amount based on market confidence", async function () {
         // 1. Create a task in TaskMarket
-        await taskMarket.createTask("Test Task", 3600); // 1 hour duration
+        await taskMarket.createTask("Test Task", 0, 3600); // 1 hour duration, 0 = IMMEDIATE
         const taskId = 1;
 
         // 2. Place bets to simulate high confidence (100% YES)
@@ -94,7 +94,7 @@ describe("GovernanceBoard PID Control", function () {
 
     it("Should dampen minting when market confidence is low", async function () {
         // 1. Create a task
-        await taskMarket.createTask("Low Confidence Task", 3600);
+        await taskMarket.createTask("Low Confidence Task", 0, 3600);
         const taskId = 1;
 
         // 2. Place bets to simulate low confidence (mostly NO)
