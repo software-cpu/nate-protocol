@@ -6,6 +6,9 @@ async function main() {
     const [deployer] = await hre.ethers.getSigners();
     console.log("Using account:", deployer.address);
 
+    const balance = await hre.ethers.provider.getBalance(deployer.address);
+    console.log("Deployer Balance:", hre.ethers.formatEther(balance), "ETH");
+
     // 1. Deploy LifeOracle
     const LifeOracle = await hre.ethers.getContractFactory("LifeOracle");
     const oracle = await LifeOracle.deploy();
@@ -42,6 +45,31 @@ async function main() {
     console.log(`NateProtocol:    ${tokenAddress}`);
     console.log(`StabilityEngine: ${engineAddress}`);
     console.log("--------------------------------------------------");
+
+    // 5. Verification
+    if (hre.network.name !== "hardhat" && hre.network.name !== "localhost") {
+        console.log("\n⏳ Waiting for 6 block confirmations needed for verification...");
+        // Wait for the last deployed contract (StabilityEngine)
+        // Ideally wait for all, but typically waiting on the last one is enough time for all if they were sequential
+        await engine.deploymentTransaction().wait(6);
+
+        console.log("🔍 Verifying contracts on Etherscan...");
+
+        const verify = async (address, args) => {
+            try {
+                await hre.run("verify:verify", {
+                    address: address,
+                    constructorArguments: args,
+                });
+            } catch (e) {
+                console.log(`❌ Verification failed for ${address}:`, e.message);
+            }
+        };
+
+        await verify(oracleAddress, []);
+        await verify(tokenAddress, [deployer.address]);
+        await verify(engineAddress, [tokenAddress, oracleAddress]);
+    }
 }
 
 main().catch((error) => {
