@@ -35,7 +35,7 @@ describe("Nate Protocol - Stablecoin Transition", function () {
     it("Should allow minting when backed by Life Metrics", async function () {
         // 1. Set Life Metrics (e.g. $1.5M Valuation)
         const valuation = ethers.parseEther("1500000"); // 1,500,000 * 1e18
-        await mockOracle.setMetrics(valuation, 0, 0, 0);
+        await mockOracle.setTotalValue(valuation);
 
         // 2. Mint 1M Tokens (Total Value $1.5M / Supply 1M = 150% CR)
         const mintAmount = ethers.parseEther("1000000"); // 1M NATE
@@ -48,7 +48,7 @@ describe("Nate Protocol - Stablecoin Transition", function () {
     it("Should fail minting if undercollateralized", async function () {
         // 1. Set Life Metrics ($1.4M)
         const valuation = ethers.parseEther("1400000");
-        await mockOracle.setMetrics(valuation, 0, 0, 0);
+        await mockOracle.setTotalValue(valuation);
 
         // 2. Try to Mint 1M Tokens (Needs $1.5M)
         const mintAmount = ethers.parseEther("1000000");
@@ -69,7 +69,7 @@ describe("Nate Protocol - Stablecoin Transition", function () {
         // 2. Mint Tokens first (Need collateral to mint)
         // Provide HUGE human valuation to allow minting
         const valuation = ethers.parseEther("100000000");
-        await mockOracle.setMetrics(valuation, 0, 0, 0);
+        await mockOracle.setTotalValue(valuation);
 
         const mintAmount = ethers.parseEther("100"); // 100 NATE ($100)
         await stabilityEngine.mint(mintAmount);
