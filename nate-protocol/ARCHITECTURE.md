@@ -53,3 +53,12 @@ A parimutuel prediction market.
 ## Security
 - **MultiSig**: Critical contract upgrades are protected by a 2-of-3 Gnosis Safe (or custom MultiSigGovernance).
 - **Timelock**: Governance actions have a 24-hour delay.
+
+### 5. Private Work Verification (Phase 3)
+To prove productivity without revealing sensitive client contracts, we utilize **ZK-Email**.
+- **Mechanism**: Verifies DKIM signatures from email providers (Gmail, etc.) inside a SNARK.
+- **Circuit Logic**:
+    - **Input**: Raw email file ("Invoice approved: 50 hours").
+    - **Logic**: Verify RSA signature against Gmail's public key.
+    - **Output**: Boolean `isValid` + `hours` extracted via Regex.
+- **Result**: You prove you received a client confirmation for work done, without revealing *who* the client is or the project details.
