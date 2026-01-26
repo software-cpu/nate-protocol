@@ -29,9 +29,7 @@ contract StabilityEngine is Ownable, ReentrancyGuard {
     INateToken public nateToken;
     ILifeOracle public lifeOracle;
     
-    // ETH Price Stub (For MVP - In prod, use Chainlink)
-    // ETH Price Stub (Fixed for Phase 2 MVP - Gas Optimized)
-    // @dev In production, this would be replaced by a Chainlink AggregatorV3Interface
+    // ETH Price Stub (Fixed for MVP - In production, use Chainlink AggregatorV3Interface)
     uint256 public constant ethPriceUSD = 2500 * 1e8; // $2500/ETH fixed
     
     // Treasury Tracking
@@ -50,11 +48,6 @@ contract StabilityEngine is Ownable, ReentrancyGuard {
 
     // ============ Core Stablecoin Mechanics ============
 
-    /**
-     * @dev "Human Quantitative Easing"
-     * Mint new NATE tokens against the rising value of Nate's life metrics.
-     * Only checks that we remain over-collateralized.
-     */
     /**
      * @notice Mint NATE Tokens
      * @dev Mint new NATE tokens against the rising value of backing metrics.

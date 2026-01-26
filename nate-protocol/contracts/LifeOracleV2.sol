@@ -24,8 +24,6 @@ contract LifeOracleV2 is FunctionsClient, ConfirmedOwner {
     bytes public s_lastResponse;
     bytes public s_lastError;
 
-    // The Tangible Metrics
-    // The Tangible Metrics
     /// @dev Struct holding all quantified self data points
     struct QuantifiedSelf {
         uint256 totalValue;        // The final calculated monetary value (18 decimals)

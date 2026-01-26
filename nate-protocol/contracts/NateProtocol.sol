@@ -72,10 +72,7 @@ contract NateProtocol is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard {
     }
 
     /**
-     * @dev Called by StabilityEngine when Nate's value increases (Human QE)
-     */
-    /**
-     * @notice Called by StabilityEngine when Nate's value increases (Human QE)
+     * @notice Mint new NATE tokens
      * @dev Restricted to MINTER_ROLE (StabilityEngine)
      * @param to The address receiving the minted tokens
      * @param amount The amount to mint
