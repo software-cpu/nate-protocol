@@ -28,6 +28,7 @@ contract TaskMarket is Ownable, ReentrancyGuard {
         uint256 noPool;
         TaskStatus status;
         bool outcome; // true = YES, false = NO
+        uint256 resultPool; // Distributable pool after fees
     }
 
     struct Position {
@@ -35,6 +36,10 @@ contract TaskMarket is Ownable, ReentrancyGuard {
         uint256 noAmount;
         bool claimed;
     }
+
+    // Protocol Support
+    uint256 public protocolFeeBps = 200; // 2%
+    uint256 public accumulatedFees;
 
     uint256 public taskCount;
     mapping(uint256 => Task) public tasks;
@@ -76,7 +81,8 @@ contract TaskMarket is Ownable, ReentrancyGuard {
             yesPool: 0,
             noPool: 0,
             status: TaskStatus.OPEN,
-            outcome: false
+            outcome: false,
+            resultPool: 0
         });
 
         emit TaskCreated(taskCount, _description, _horizon, block.timestamp + _durationSeconds);
@@ -144,6 +150,10 @@ contract TaskMarket is Ownable, ReentrancyGuard {
         task.status = TaskStatus.RESOLVED;
 
         uint256 totalPool = task.yesPool + task.noPool;
+        uint256 fee = (totalPool * protocolFeeBps) / 10000;
+        task.resultPool = totalPool - fee;
+        accumulatedFees += fee;
+
         emit TaskResolved(_taskId, _outcome, totalPool);
     }
 
@@ -164,14 +174,14 @@ contract TaskMarket is Ownable, ReentrancyGuard {
         if (task.outcome) {
             // YES Won
             if (pos.yesAmount > 0) {
-                // Share = (MyBet / TotalYes) * TotalPool
-                reward = (pos.yesAmount * totalPool) / task.yesPool;
+                // Share = (MyBet / TotalYes) * ResultPool
+                reward = (pos.yesAmount * task.resultPool) / task.yesPool;
             }
         } else {
             // NO Won
             if (pos.noAmount > 0) {
-                // Share = (MyBet / TotalNo) * TotalPool
-                reward = (pos.noAmount * totalPool) / task.noPool;
+                // Share = (MyBet / TotalNo) * ResultPool
+                reward = (pos.noAmount * task.resultPool) / task.noPool;
             }
         }
 
@@ -201,5 +211,19 @@ contract TaskMarket is Ownable, ReentrancyGuard {
         
         yesPercent = (task.yesPool * 100) / total;
         noPercent = (task.noPool * 100) / total;
+    }
+
+    // ============ Admin / Fee Management ============
+
+    function setProtocolFee(uint256 _bps) external onlyOwner {
+        require(_bps <= 1000, "Max fee 10%");
+        protocolFeeBps = _bps;
+    }
+
+    function withdrawFees(address _to) external onlyOwner {
+        uint256 amount = accumulatedFees;
+        require(amount > 0, "No fees to withdraw");
+        accumulatedFees = 0;
+        nateToken.transfer(_to, amount);
     }
 }

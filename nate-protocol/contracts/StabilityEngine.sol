@@ -24,6 +24,11 @@ contract StabilityEngine is Ownable, ReentrancyGuard {
     uint256 public constant MIN_COLLATERAL_RATIO = 150; // 150%
     uint256 public constant PRICE_PRECISION = 1e8;      // Chainlink decimals
     
+    // ============ Fees ============
+    uint256 public mintFeeBps = 50;   // 0.5%
+    uint256 public redeemFeeBps = 50; // 0.5%
+    uint256 public accumulatedEthFees;
+
     // ============ State Variables ============
 
     INateToken public nateToken;
@@ -66,7 +71,14 @@ contract StabilityEngine is Ownable, ReentrancyGuard {
             "Undercollateralized mint attempt"
         );
         
-        nateToken.mint(msg.sender, _amount);
+        uint256 fee = (_amount * mintFeeBps) / 10000;
+        uint256 netAmount = _amount - fee;
+
+        nateToken.mint(msg.sender, netAmount);
+        if (fee > 0) {
+            nateToken.mint(address(this), fee); // Protocol revenue
+        }
+        
         emit Minted(msg.sender, _amount, projectedSupply);
     }
 
@@ -84,16 +96,20 @@ contract StabilityEngine is Ownable, ReentrancyGuard {
         // Decimals: (1e18 * 1e8) / 1e8 = 1e18
         uint256 ethToReturn = (_amountNate * PRICE_PRECISION) / ethPriceUSD;
         
+        uint256 fee = (ethToReturn * redeemFeeBps) / 10000;
+        uint256 netEth = ethToReturn - fee;
+        accumulatedEthFees += fee;
+
         require(address(this).balance >= ethToReturn, "Treasury liquid crisis");
         
         // 2. Burn NATE
         nateToken.burn(msg.sender, _amountNate);
         
         // 3. Send ETH
-        (bool success, ) = payable(msg.sender).call{value: ethToReturn}("");
+        (bool success, ) = payable(msg.sender).call{value: netEth}("");
         require(success, "ETH transfer failed");
         
-        emit Redeemed(msg.sender, _amountNate, ethToReturn);
+        emit Redeemed(msg.sender, _amountNate, netEth);
     }
 
     // ============ Valuation Logic ============
@@ -139,5 +155,25 @@ contract StabilityEngine is Ownable, ReentrancyGuard {
     
     function setOracle(address _oracle) external onlyOwner {
         lifeOracle = ILifeOracle(_oracle);
+    }
+
+    function setFees(uint256 _mintFeeBps, uint256 _redeemFeeBps) external onlyOwner {
+        require(_mintFeeBps <= 1000 && _redeemFeeBps <= 1000, "Max fee 10%");
+        mintFeeBps = _mintFeeBps;
+        redeemFeeBps = _redeemFeeBps;
+    }
+
+    function withdrawEthFees(address _to) external onlyOwner {
+        uint256 amount = accumulatedEthFees;
+        require(amount > 0, "No fees");
+        accumulatedEthFees = 0;
+        (bool success, ) = payable(_to).call{value: amount}("");
+        require(success, "Transfer failed");
+    }
+
+    function withdrawNateFees(address _to) external onlyOwner {
+        uint256 balance = nateToken.balanceOf(address(this));
+        require(balance > 0, "No NATE fees");
+        nateToken.transfer(_to, balance);
     }
 }
