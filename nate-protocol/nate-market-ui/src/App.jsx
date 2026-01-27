@@ -230,6 +230,7 @@ function App() {
           onClose={() => setIsCreateModalOpen(false)}
           onConfirm={handleCreateTask}
           loading={loading}
+        />
       </div>
     </div>
   )
