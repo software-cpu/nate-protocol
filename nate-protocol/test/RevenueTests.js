@@ -38,7 +38,7 @@ describe("Revenue & Monetization", function () {
         // Mint setup tokens
         await token.mint(user1.address, ethers.parseEther("1000"));
         await token.mint(user2.address, ethers.parseEther("1000"));
-        
+
         // Approve Market
         await token.connect(user1).approve(await market.getAddress(), ethers.MaxUint256);
         await token.connect(user2).approve(await market.getAddress(), ethers.MaxUint256);
@@ -48,7 +48,7 @@ describe("Revenue & Monetization", function () {
         it("Should deduct 2% fee from winning pool", async function () {
             // Create Task
             await market.createTask("Test Rake", 0, 3600);
-            
+
             // Bet: 100 YES, 100 NO (Total 200)
             await market.connect(user1).bet(1, true, ethers.parseEther("100"));
             await market.connect(user2).bet(1, false, ethers.parseEther("100"));
@@ -107,24 +107,24 @@ describe("Revenue & Monetization", function () {
         });
 
         it("Should deduct 0.5% Mint Fee", async function () {
-             const startBal = await token.balanceOf(owner.address);
-             
-             // Mint 200
-             await stableEngine.mint(ethers.parseEther("200"));
-             
-             const endBal = await token.balanceOf(owner.address);
-             // Received: 200 * 0.995 = 199
-             expect(endBal - startBal).to.equal(ethers.parseEther("199"));
-             
-             // Check Protocol Revenue (Minted to Engine address)
-             const engineBal = await token.balanceOf(await stableEngine.getAddress());
-             expect(engineBal).to.equal(ethers.parseEther("1")); // 0.5% of 200
+            const startBal = await token.balanceOf(owner.address);
+
+            // Mint 200
+            await stableEngine.mint(ethers.parseEther("200"));
+
+            const endBal = await token.balanceOf(owner.address);
+            // Received: 200 * 0.995 = 199
+            expect(endBal - startBal).to.equal(ethers.parseEther("199"));
+
+            // Check Protocol Revenue (Minted to Engine address)
+            const engineBal = await token.balanceOf(await stableEngine.getAddress());
+            expect(engineBal).to.equal(ethers.parseEther("1")); // 0.5% of 200
         });
 
         it("Should deduct 0.5% Redeem Fee", async function () {
             // User1 has NATE.
             await token.connect(user1).approve(await stableEngine.getAddress(), ethers.parseEther("100"));
-            
+
             // Redeem 100 NATE
             // 1 NATE = $1 USD. 100 NATE = $100 USD.
             // ETH Price = $2500.
@@ -133,23 +133,25 @@ describe("Revenue & Monetization", function () {
             // Net = 0.0398 ETH.
 
             const ethBalBefore = await ethers.provider.getBalance(user1.address);
-            
+
             const tx = await stableEngine.connect(user1).redeem(ethers.parseEther("100"));
             const receipt = await tx.wait();
             const gasSpent = receipt.gasUsed * receipt.gasPrice;
 
             const ethBalAfter = await ethers.provider.getBalance(user1.address);
-            
+
             // 0.04 ETH = 40000000000000000 WEI
             // 0.0002 ETH = 200000000000000 WEI
             // Expected Net = 39800000000000000 WEI
             const expectedNet = ethers.parseEther("0.0398");
-            
+
             // Check delta + gas
             const delta = ethBalAfter - ethBalBefore + gasSpent;
-            
-            // Allow small rounding errors if any, but math is precise in solidity usually
-            expect(delta).to.closeTo(expectedNet, 1000000); // 1gwei tolerance
+
+            // Allow small rounding errors if any (1 gwei tolerance)
+            const tolerance = 1000000n;
+            const diff = delta > expectedNet ? delta - expectedNet : expectedNet - delta;
+            expect(diff).to.be.lt(tolerance);
 
             // Check Accumulated Fees
             const fees = await stableEngine.accumulatedEthFees();
@@ -157,21 +159,21 @@ describe("Revenue & Monetization", function () {
         });
 
         it("Should allow withdrawing ETH fees", async function () {
-             // Generate Fee
-             await token.connect(user1).approve(await stableEngine.getAddress(), ethers.parseEther("100"));
-             await stableEngine.connect(user1).redeem(ethers.parseEther("100"));
+            // Generate Fee
+            await token.connect(user1).approve(await stableEngine.getAddress(), ethers.parseEther("100"));
+            await stableEngine.connect(user1).redeem(ethers.parseEther("100"));
 
-             const ownerEthBefore = await ethers.provider.getBalance(owner.address);
-             
-             // Withdraw 0.0002 ETH
-             const tx = await stableEngine.withdrawEthFees(owner.address);
-             const receipt = await tx.wait();
-             const gasSpent = receipt.gasUsed * receipt.gasPrice;
-             
-             const ownerEthAfter = await ethers.provider.getBalance(owner.address);
-             
-             const expectedAmt = ethers.parseEther("0.0002");
-             expect(ownerEthAfter - ownerEthBefore + gasSpent).to.equal(expectedAmt);
+            const ownerEthBefore = await ethers.provider.getBalance(owner.address);
+
+            // Withdraw 0.0002 ETH
+            const tx = await stableEngine.withdrawEthFees(owner.address);
+            const receipt = await tx.wait();
+            const gasSpent = receipt.gasUsed * receipt.gasPrice;
+
+            const ownerEthAfter = await ethers.provider.getBalance(owner.address);
+
+            const expectedAmt = ethers.parseEther("0.0002");
+            expect(ownerEthAfter - ownerEthBefore + gasSpent).to.equal(expectedAmt);
         });
     });
 });
