@@ -24,56 +24,83 @@ async function main() {
     const linkToken = await hre.ethers.getContractAt(linkAbi, SEPOLIA_LINK_TOKEN, signer);
 
     // 2. Check Balance
-    const balance = await linkToken.balanceOf(signer.address);
-    console.log(`LINK Balance: ${hre.ethers.formatEther(balance)} LINK`);
-    if (balance < BigInt(LINK_AMOUNT)) {
-        throw new Error("Insufficient LINK");
+    try {
+        const balance = await linkToken.balanceOf(signer.address);
+        console.log(`LINK Balance: ${hre.ethers.formatEther(balance)} LINK`);
+    } catch (e) {
+        console.log("Error checking LINK balance:", e.message);
     }
 
     // 3. Create Subscription
     console.log("\nCreating Subscription via Router (Low Level)...");
-    const createTx = await router.createSubscription();
-    const receipt = await createTx.wait();
+    let subId;
+    try {
+        const createTx = await router.createSubscription({ gasLimit: 500000 });
+        console.log("Tx Sent:", createTx.hash);
+        const receipt = await createTx.wait();
 
-    // Parse event to get ID
-    const event = receipt.logs.find(log => {
-        try { return router.interface.parseLog(log)?.name === "SubscriptionCreated"; }
-        catch { return false; }
-    });
-    if (!event) throw new Error("Could not find SubscriptionCreated event");
+        const event = receipt.logs.find(log => {
+            try { return router.interface.parseLog(log)?.name === "SubscriptionCreated"; }
+            catch { return false; }
+        });
+        if (!event) throw new Error("Could not find SubscriptionCreated event");
 
-    const parsedLog = router.interface.parseLog(event);
-    const subId = parsedLog.args.subscriptionId;
-    console.log(`✅ Subscription Created. ID: ${subId}`);
+        const parsedLog = router.interface.parseLog(event);
+        subId = parsedLog.args.subscriptionId;
+        console.log(`✅ Subscription Created. ID: ${subId}`);
+    } catch (error) {
+        console.error("\n❌ FAILED to create subscription:");
+        console.error(error);
+        process.exit(1);
+    }
 
     // 4. Fund Subscription (TransferAndCall)
     console.log(`\nFunding Subscription ${subId} with 3 LINK...`);
-    const fundTx = await linkToken.transferAndCall(
-        SEPOLIA_ROUTER,
-        LINK_AMOUNT,
-        hre.ethers.AbiCoder.defaultAbiCoder().encode(["uint64"], [subId])
-    );
-    await fundTx.wait();
-    console.log("✅ Subscription Funded.");
+    try {
+        const fundTx = await linkToken.transferAndCall(
+            SEPOLIA_ROUTER,
+            LINK_AMOUNT,
+            hre.ethers.AbiCoder.defaultAbiCoder().encode(["uint64"], [subId]),
+            { gasLimit: 500000 }
+        );
+        await fundTx.wait();
+        console.log("✅ Subscription Funded.");
+    } catch (error) {
+        console.error("\n❌ FAILED to fund subscription:");
+        console.error(error);
+        process.exit(1);
+    }
 
     // 5. Add Consumer
     console.log(`\nAdding Consumer: ${OBSERVER_ADDRESS}...`);
-    const addTx = await router.addConsumer(subId, OBSERVER_ADDRESS);
-    await addTx.wait();
-    console.log("✅ Consumer Added.");
+    try {
+        const addTx = await router.addConsumer(subId, OBSERVER_ADDRESS, { gasLimit: 500000 });
+        await addTx.wait();
+        console.log("✅ Consumer Added.");
+    } catch (error) {
+        console.error("\n❌ FAILED to add consumer:");
+        console.error(error);
+        process.exit(1);
+    }
 
     // 6. Update Contract
     console.log("\nUpdating LifeOracleV2 with new Subscription ID...");
-    const LifeOracle = await hre.ethers.getContractAt("LifeOracleV2", OBSERVER_ADDRESS, signer);
-    const updateTx = await LifeOracle.setSubscriptionId(subId);
-    await updateTx.wait();
-    console.log("✅ LifeOracleV2 updated.");
+    try {
+        const LifeOracle = await hre.ethers.getContractAt("LifeOracleV2", OBSERVER_ADDRESS, signer);
+        const updateTx = await LifeOracle.setSubscriptionId(subId, { gasLimit: 500000 });
+        await updateTx.wait();
+        console.log("✅ LifeOracleV2 updated.");
+    } catch (error) {
+        console.error("\n❌ FAILED to update contract:");
+        console.error(error);
+        process.exit(1);
+    }
 
     console.log("\n🎉 Chainlink Setup Complete!");
     console.log(`Sub ID: ${subId}`);
 }
 
 main().catch((error) => {
-    console.error(error);
+    console.error("UNKNOWN ERROR:", error);
     process.exit(1);
 });
