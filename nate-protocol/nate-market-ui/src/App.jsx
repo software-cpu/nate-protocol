@@ -10,6 +10,7 @@ import BetModal from './components/BetModal'
 import CreateTaskModal from './components/CreateTaskModal'
 import StabilityPanel from './components/StabilityPanel'
 import ActivityFeed from './components/ActivityFeed'
+import VitalSigns from './components/VitalSigns'
 
 // Configuration (Replace with actual addresses)
 const CONTRACTS = {
@@ -209,6 +210,13 @@ function App() {
             )}
           </div>
         </header>
+
+        {/* Vital Signs / Metrics Section */}
+        {account && (
+          <div className="mb-12">
+            <VitalSigns />
+          </div>
+        )}
 
         {/* Stability Section */}
         {account && (
