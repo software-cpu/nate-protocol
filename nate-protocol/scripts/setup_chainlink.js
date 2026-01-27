@@ -13,6 +13,7 @@ async function main() {
     const routerAbi = [
         "function createSubscription() external returns (uint64)",
         "function addConsumer(uint64 subscriptionId, address consumer) external",
+        "function getAllowListId() external view returns (bytes32)",
         "event SubscriptionCreated(uint64 indexed subscriptionId, address owner)"
     ];
     const linkAbi = [
@@ -23,19 +24,28 @@ async function main() {
     const router = await hre.ethers.getContractAt(routerAbi, SEPOLIA_ROUTER, signer);
     const linkToken = await hre.ethers.getContractAt(linkAbi, SEPOLIA_LINK_TOKEN, signer);
 
-    // 2. Check Balance
+    // 2. Check Balance & Router Ping
+    console.log("Checking connectivity...");
     try {
         const balance = await linkToken.balanceOf(signer.address);
         console.log(`LINK Balance: ${hre.ethers.formatEther(balance)} LINK`);
+        const allowListId = await router.getAllowListId();
+        console.log(`Router Reachable. AllowListId: ${allowListId}`);
     } catch (e) {
-        console.log("Error checking LINK balance:", e.message);
+        console.error("\n❌ FAILED to connect to Router or Token:");
+        console.error(e);
+        process.exit(1);
     }
 
     // 3. Create Subscription
     console.log("\nCreating Subscription via Router (Low Level)...");
     let subId;
     try {
-        const createTx = await router.createSubscription({ gasLimit: 500000 });
+        // Try verify with callStatic first
+        await router.createSubscription.staticCall({ gasLimit: 2000000 });
+        console.log("Static Call Successful (Transaction should work)");
+
+        const createTx = await router.createSubscription({ gasLimit: 2000000 }); // High Gas
         console.log("Tx Sent:", createTx.hash);
         const receipt = await createTx.wait();
 
@@ -50,6 +60,8 @@ async function main() {
         console.log(`✅ Subscription Created. ID: ${subId}`);
     } catch (error) {
         console.error("\n❌ FAILED to create subscription:");
+        if (error.data) console.error("Revert Data:", error.data);
+        if (error.reason) console.error("Revert Reason:", error.reason);
         console.error(error);
         process.exit(1);
     }
