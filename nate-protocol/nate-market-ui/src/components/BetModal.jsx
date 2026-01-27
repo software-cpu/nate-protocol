@@ -9,7 +9,7 @@ const BetModal = ({ isOpen, onClose, task, betYes, onConfirm, loading }) => {
       setReturnEstimate(0);
       return;
     }
-    
+
     // Simple naive estimate: (MyBet / PoolForSide) * TotalPool
     // Note: This is an approximation. Real AMM logic is complex.
     // For Parimutuel: NewShare = Amount / (CurrentPool + Amount) * (TotalPool + Amount)
@@ -18,16 +18,21 @@ const BetModal = ({ isOpen, onClose, task, betYes, onConfirm, loading }) => {
 
     const currentSidePool = betYes ? parseFloat(task.yesPool) : parseFloat(task.noPool);
     const otherSidePool = betYes ? parseFloat(task.noPool) : parseFloat(task.yesPool);
-    
+
     // Total Pool after my bet
     const totalPool = currentSidePool + otherSidePool + val;
-    
+
     // My Share of the winning side
     const myShare = val / (currentSidePool + val);
-    
-    // Estimated Returns
-    const estimatedPayout = myShare * totalPool;
-    setReturnEstimate(estimatedPayout.toFixed(2));
+
+    // Estimated Payout (before fees)
+    const rawPayout = myShare * totalPool;
+
+    // Apply 2% Protocol Rake
+    const feeRate = 0.02;
+    const finalPayout = rawPayout * (1 - feeRate);
+
+    setReturnEstimate(finalPayout.toFixed(2));
 
   }, [amount, task, betYes]);
 
@@ -36,7 +41,7 @@ const BetModal = ({ isOpen, onClose, task, betYes, onConfirm, loading }) => {
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-nate-card border border-nate-blue/30 rounded-lg p-8 w-full max-w-md shadow-[0_0_50px_rgba(0,0,0,0.8)] relative">
-        <button 
+        <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-500 hover:text-white"
         >
@@ -66,6 +71,9 @@ const BetModal = ({ isOpen, onClose, task, betYes, onConfirm, loading }) => {
               <span className="text-gray-400">Potential Payout:</span>
               <span className="font-bold text-white">{returnEstimate} $NATE</span>
             </div>
+            <div className="flex justify-between mb-1 text-[10px] italic">
+              <span className="text-gray-500">Includes 2% protocol fee rake</span>
+            </div>
             <div className="flex justify-between">
               <span className="text-gray-400">ROI:</span>
               <span className="font-bold text-nate-green">
@@ -78,11 +86,10 @@ const BetModal = ({ isOpen, onClose, task, betYes, onConfirm, loading }) => {
         <button
           onClick={() => onConfirm(amount)}
           disabled={loading || !amount || parseFloat(amount) <= 0}
-          className={`w-full py-4 rounded font-display font-bold text-lg transition-all ${
-            betYes 
-              ? 'bg-nate-green text-black hover:bg-white' 
+          className={`w-full py-4 rounded font-display font-bold text-lg transition-all ${betYes
+              ? 'bg-nate-green text-black hover:bg-white'
               : 'bg-nate-red text-black hover:bg-white'
-          } disabled:opacity-50 disabled:cursor-not-allowed`}
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
         >
           {loading ? "PROCESSING..." : `CONFIRM BET ${betYes ? "YES" : "NO"}`}
         </button>
