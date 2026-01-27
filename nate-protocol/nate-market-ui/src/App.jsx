@@ -223,22 +223,32 @@ function App() {
           />
         )}
 
-        {/* Market Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {tasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              onBet={openBetModal}
-              connected={!!account}
-            />
-          ))}
+        {/* Main Content Area */}
+        <div className="flex flex-col xl:flex-row gap-8">
+          {/* Market Grid */}
+          <div className="flex-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {tasks.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  onBet={openBetModal}
+                  connected={!!account}
+                />
+              ))}
 
-          {tasks.length === 0 && !loading && (
-            <div className="col-span-3 text-center text-gray-500 py-12">
-              No active markets. Create one!
+              {tasks.length === 0 && !loading && (
+                <div className="col-span-2 text-center text-gray-500 py-12">
+                  No active markets. Create one!
+                </div>
+              )}
             </div>
-          )}
+          </div>
+
+          {/* Activity Feed */}
+          <div className="xl:w-80">
+            <ActivityFeed events={events} />
+          </div>
         </div>
 
         {/* Footer */}
