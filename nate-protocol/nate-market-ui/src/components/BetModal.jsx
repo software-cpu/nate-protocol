@@ -39,8 +39,8 @@ const BetModal = ({ isOpen, onClose, task, betYes, onConfirm, loading }) => {
   if (!isOpen || !task) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-nate-card border border-nate-blue/30 rounded-lg p-8 w-full max-w-md shadow-[0_0_50px_rgba(0,0,0,0.8)] relative">
+    <div className="fixed inset-0 bg-nate-dark/40 backdrop-blur-md flex items-center justify-center z-50 transition-all duration-300">
+      <div className="bg-nate-card/90 border border-nate-blue/40 rounded-xl p-8 w-full max-w-md shadow-[0_0_80px_rgba(0,243,255,0.15)] relative backdrop-blur-xl scale-in-center">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-500 hover:text-white"
@@ -87,8 +87,8 @@ const BetModal = ({ isOpen, onClose, task, betYes, onConfirm, loading }) => {
           onClick={() => onConfirm(amount)}
           disabled={loading || !amount || parseFloat(amount) <= 0}
           className={`w-full py-4 rounded font-display font-bold text-lg transition-all ${betYes
-              ? 'bg-nate-green text-black hover:bg-white'
-              : 'bg-nate-red text-black hover:bg-white'
+            ? 'bg-nate-green text-black hover:bg-white'
+            : 'bg-nate-red text-black hover:bg-white'
             } disabled:opacity-50 disabled:cursor-not-allowed`}
         >
           {loading ? "PROCESSING..." : `CONFIRM BET ${betYes ? "YES" : "NO"}`}

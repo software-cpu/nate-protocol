@@ -3,7 +3,7 @@ import { ethers } from 'ethers';
 
 const TaskCard = ({ task, onBet, connected }) => {
     return (
-        <div className="bg-nate-card border border-gray-800 rounded-lg p-6 relative overflow-hidden group hover:border-nate-blue/50 transition-all">
+        <div className="bg-nate-card/60 border border-gray-800/50 rounded-xl p-8 relative overflow-hidden group hover:border-nate-blue/60 transition-all duration-500 backdrop-blur-sm shadow-lg hover:shadow-nate-blue/5">
             {/* Horizon Badge */}
             <div className={`absolute top-4 right-4 text-xs font-bold px-2 py-1 rounded ${task.status === 0 ? 'bg-gray-800 text-gray-400' : 'bg-nate-green text-black'
                 }`}>
