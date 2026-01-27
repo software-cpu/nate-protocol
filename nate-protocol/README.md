@@ -71,5 +71,60 @@ We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for se
 - [ ] Chainlink Functions Integration
 - [ ] Auditor Review
 
+## Testnet Deployment (Sepolia)
+This guide walks you through deploying the Nate Protocol to the Sepolia Ethereum testnet.
+
+### 1. Prerequisites (Faucets & Wallet)
+Before deploying, you need a wallet with Sepolia ETH to pay for gas fees.
+
+1.  **Metamask Setup**:
+    - Create a **new account** in MetaMask just for development (e.g., "Sepolia Dev").
+    - Enable "Show test networks" in MetaMask settings.
+    - Switch to the "Sepolia" network.
+
+2.  **Get Test ETH**:
+    - [Google Cloud Web3 Faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia) (0.05 ETH/day, simplest)
+    - [Chainlink Faucet](https://faucets.chain.link/sepolia) (0.5 ETH + LINK)
+    - [PoW Faucet](https://sepolia-faucet.pk910.de/) (Mine your own test ETH)
+
+### 2. Configuration
+Create a `.env` file in the root directory (copy from `.env.example`) and fill in your secrets:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
+```ini
+# Your 64-char private key from MetaMask (without 0x)
+SEPOLIA_PRIVATE_KEY=abcdef12345...
+
+# RPC URL (use Alchemy/Infura or the public public one)
+SEPOLIA_RPC_URL=https://rpc.sepolia.org
+
+# Etherscan API Key (for automatic verification)
+ETHERSCAN_API_KEY=your_key_here
+```
+
+### 3. Deploy
+Run the system deployment script targeting the Sepolia network:
+
+```bash
+npm run deploy:sepolia
+```
+
+**Output**:
+- The script will deploy the Oracle, Token, Stability Engine, Governance Board, and Task Market.
+- It will verify permissions and link contracts together.
+- A `deployment-sepolia.json` file will be created with all the contract addresses.
+
+### 4. Verification
+To verify your contract source code on Etherscan (e.g., for `NateProtocol` token):
+
+```bash
+npx hardhat verify --network sepolia <TOKEN_ADDRESS> <DEPLOYER_ADDRESS>
+```
+*Note: Refer to `scripts/deploy_system.js` to see the constructor arguments used for each contract.*
+
 ## License
 MIT
