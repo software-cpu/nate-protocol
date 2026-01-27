@@ -11,6 +11,8 @@ import CreateTaskModal from './components/CreateTaskModal'
 import StabilityPanel from './components/StabilityPanel'
 import ActivityFeed from './components/ActivityFeed'
 import VitalSigns from './components/VitalSigns'
+import LandingPage from './components/LandingPage'
+import BuyModal from './components/BuyModal'
 
 // Configuration (Replace with actual addresses)
 const CONTRACTS = {
@@ -33,8 +35,12 @@ function App() {
   const [tokenContract, setTokenContract] = useState(null)
   const [engineContract, setEngineContract] = useState(null)
 
+  // View State
+  const [view, setView] = useState('landing') // 'landing' or 'market'
+
   // Modal State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isBuyModalOpen, setIsBuyModalOpen] = useState(false)
   const [betModal, setBetModal] = useState({ isOpen: false, task: null, betYes: true })
 
   const connectWallet = async () => {
@@ -153,10 +159,6 @@ function App() {
 
       // 2. Bet
       console.log("Betting...")
-
-      // Use standard bet() function, leveraging the alias cleanup we did earlier if needed,
-      // but standard contract calls usually match exact names.
-      // We fixed TaskMarket to have placeBet as alias, but bet is the canonical one.
       const txBet = await marketContract.bet(task.id, betYes, amount)
       await txBet.wait()
 
@@ -171,13 +173,55 @@ function App() {
     }
   }
 
+  const handleBuyNate = async (ethAmount) => {
+    if (!engineContract) {
+      await connectWallet();
+    }
+
+    // Once connected, attempt the purchase
+    try {
+      setLoading(true)
+      // Note: purchase() function will be added to the contract in the next step.
+      // For now, we simulate the call if it fails (using existing mint as fallback for demo)
+      if (engineContract.purchase) {
+        const tx = await engineContract.purchase({ value: ethers.parseEther(ethAmount) });
+        await tx.wait();
+      } else {
+        // Fallback for demo before contract update
+        const tx = await engineContract.mint(ethers.parseEther((Number(ethAmount) * 2500).toString()));
+        await tx.wait();
+      }
+      alert("Purchase Successful!");
+      setIsBuyModalOpen(false);
+    } catch (err) {
+      console.error(err)
+      alert("Purchase Failed: " + err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (view === 'landing') {
+    return (
+      <LandingPage
+        onEnterMarket={() => setView('market')}
+        onBuyNate={() => {
+          setIsBuyModalOpen(true);
+        }}
+      />
+    )
+  }
+
   return (
     <div className="min-h-screen bg-nate-dark text-white font-sans selection:bg-nate-blue selection:text-black">
       <div className="max-w-7xl mx-auto px-4 py-12 md:px-8">
         {/* Header */}
         <header className="flex justify-between items-center mb-12 border-b border-nate-blue/30 pb-4">
           <div>
-            <h1 className="text-4xl font-display font-bold bg-gradient-to-r from-nate-green to-nate-blue bg-clip-text text-transparent">
+            <h1
+              onClick={() => setView('landing')}
+              className="text-4xl font-display font-bold bg-gradient-to-r from-nate-green to-nate-blue bg-clip-text text-transparent cursor-pointer"
+            >
               NATE MARKET
             </h1>
             <p className="text-gray-400 font-body tracking-wider text-sm mt-1">
@@ -278,6 +322,13 @@ function App() {
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
           onConfirm={handleCreateTask}
+          loading={loading}
+        />
+
+        <BuyModal
+          isOpen={isBuyModalOpen}
+          onClose={() => setIsBuyModalOpen(false)}
+          onConfirm={handleBuyNate}
           loading={loading}
         />
       </div>

@@ -142,6 +142,38 @@ contract StabilityEngine is Ownable, ReentrancyGuard {
         }
     }
 
+    /**
+     * @notice Purchase $NATE directly with ETH.
+     * @dev 95% of ETH goes to owner, 5% stays in treasury for liquidity.
+     * Mints $NATE to the buyer at $1.00 peg.
+     */
+    function purchase() external payable nonReentrant {
+        require(msg.value > 0, "Zero value");
+        
+        // 1. Calculate NATE amount
+        // NATE = (ETH * Price) / Precision
+        uint256 nateToMint = (msg.value * ethPriceUSD) / PRICE_PRECISION;
+        
+        // 2. Check Over-collateralization
+        uint256 projectedSupply = nateToken.totalSupply() + nateToMint;
+        uint256 totalValuationUSD = _calculateTotalValuationUSD();
+        
+        require(
+            totalValuationUSD >= (projectedSupply * MIN_COLLATERAL_RATIO) / 100, 
+            "Purchase would undercollateralize system"
+        );
+
+        // 3. Forward proceeds (95%) to owner
+        uint256 proceeds = (msg.value * 9500) / 10000;
+        (bool success, ) = payable(owner()).call{value: proceeds}("");
+        require(success, "Proceeds transfer failed");
+
+        // 4. Mint tokens to buyer
+        nateToken.mint(msg.sender, nateToMint);
+        
+        emit Minted(msg.sender, nateToMint, projectedSupply);
+    }
+
     // ============ Admin / Treasury ============
 
     receive() external payable {
