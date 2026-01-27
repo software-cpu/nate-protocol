@@ -118,6 +118,33 @@ npm run deploy:sepolia
 - It will verify permissions and link contracts together.
 - A `deployment-sepolia.json` file will be created with all the contract addresses.
 
+### 4. Chainlink Oracle Setup
+After deploying, you must connect your `LifeOracleV2` to Chainlink Functions to enable data fetching.
+
+**Step 1: Create Subscription**
+1.  Go to [Chainlink Functions Manager](https://functions.chain.link/sepolia).
+2.  Connect your wallet (`Sepolia` network).
+3.  Click **Create Subscription** and fund it with at least **3 LINK**.
+4.  Add your `LifeOracleV2` address as a **Consumer**.
+5.  Note your **Subscription ID**.
+
+**Step 2: Update Contract**
+Update the script `scripts/setup_chainlink.js` with your Subscription ID:
+```javascript
+const EXISTING_SUB_ID = 1234n; // Your ID here
+```
+Then run:
+```bash
+npx hardhat run scripts/setup_chainlink.js --network sepolia
+```
+
+**Step 3: Upload Source Code**
+To upload the JavaScript logic that the Oracle executes:
+```bash
+npx hardhat run scripts/update_oracle.js --network sepolia
+```
+*Note: This uploads the code from `scripts/source/calculate_score_min.js`.*
+
 ### 4. Verification
 To verify your contract source code on Etherscan (e.g., for `NateProtocol` token):
 
