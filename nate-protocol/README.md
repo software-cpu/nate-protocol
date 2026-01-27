@@ -67,8 +67,8 @@ We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for se
 - [ ] Wallet Integration Tests
 
 ### Phase 3: Decentralization
-- [ ] Sepolia Testnet Deployment
-- [ ] Chainlink Functions Integration
+- [x] Sepolia Testnet Deployment
+- [x] Chainlink Functions Integration
 - [ ] Auditor Review
 
 ## Testnet Deployment (Sepolia)
@@ -145,7 +145,7 @@ npx hardhat run scripts/update_oracle.js --network sepolia
 ```
 *Note: This uploads the code from `scripts/source/calculate_score_min.js`.*
 
-### 4. Verification
+### 5. Verification
 To verify your contract source code on Etherscan (e.g., for `NateProtocol` token):
 
 ```bash
