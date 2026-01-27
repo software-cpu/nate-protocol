@@ -2,22 +2,27 @@ import { useState, useEffect } from 'react'
 import { ethers } from 'ethers'
 import TaskMarketABI from './abi/TaskMarket.json'
 import NateProtocolABI from './abi/NateProtocol.json'
+import StabilityEngineABI from './abi/StabilityEngine.json'
 
 // Components
 import TaskCard from './components/TaskCard'
 import BetModal from './components/BetModal'
 import CreateTaskModal from './components/CreateTaskModal'
+import StabilityPanel from './components/StabilityPanel'
+import ActivityFeed from './components/ActivityFeed'
 
 // Configuration (Replace with actual addresses)
 const CONTRACTS = {
   taskMarket: "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
-  nateToken: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+  nateToken: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+  stabilityEngine: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
 }
 
 function App() {
   const [account, setAccount] = useState(null)
   const [balance, setBalance] = useState("0")
   const [tasks, setTasks] = useState([])
+  const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(false)
 
   // Web3 State
@@ -25,6 +30,7 @@ function App() {
   const [signer, setSigner] = useState(null)
   const [marketContract, setMarketContract] = useState(null)
   const [tokenContract, setTokenContract] = useState(null)
+  const [engineContract, setEngineContract] = useState(null)
 
   // Modal State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
@@ -45,9 +51,11 @@ function App() {
 
         const _market = new ethers.Contract(CONTRACTS.taskMarket, TaskMarketABI.abi, _signer)
         const _token = new ethers.Contract(CONTRACTS.nateToken, NateProtocolABI.abi, _signer)
+        const _engine = new ethers.Contract(CONTRACTS.stabilityEngine, StabilityEngineABI.abi, _signer)
 
         setMarketContract(_market)
         setTokenContract(_token)
+        setEngineContract(_engine)
 
         const bal = await _token.balanceOf(accounts[0])
         setBalance(ethers.formatEther(bal))
@@ -93,7 +101,17 @@ function App() {
   const setMockData = () => {
     setTasks([
       { id: 1, desc: "Ship Phase 4 Mainnet", horizon: "2 HOURS", yesPool: "500", noPool: "300", odds: 62.5, status: 0 },
-      { id: 2, desc: "Deep Work > 6 Hours", horizon: "DAILY", yesPool: "1200", noPool: "400", odds: 75.0, status: 0 }
+      { id: 2, desc: "Deep Work > 6 Hours", horizon: "DAILY", yesPool: "1200", noPool: "400", odds: 75.0, status: 0 },
+      { id: 3, desc: "Deploy ZK-Email Verifier", horizon: "DAILY", yesPool: "450", noPool: "250", odds: 64.3, status: 0 },
+      { id: 4, desc: "Community Call #1", horizon: "DAILY", yesPool: "100", noPool: "50", odds: 66.7, status: 2, odds: 100 }
+    ])
+
+    setEvents([
+      { text: "Account 0x...F0512 minted 1,000 $NATE", time: "2m ago", type: "mint", tag: "STABILITY" },
+      { text: "New bet placed on 'Deep Work': 500 NATE (YES)", time: "5m ago", type: "bet", tag: "BET" },
+      { text: "Market 'Community Call #1' resolved as YES", time: "15m ago", type: "system", tag: "MARKET" },
+      { text: "Account 0x...A1B2C redeemed 200 $NATE for ETH", time: "45m ago", type: "redeem", tag: "STABILITY" },
+      { text: "Nate Protocol v4.1 initialized", time: "1h ago", type: "system", tag: "SYSTEM" }
     ])
   }
 
@@ -191,6 +209,19 @@ function App() {
             )}
           </div>
         </header>
+
+        {/* Stability Section */}
+        {account && (
+          <StabilityPanel
+            engineContract={engineContract}
+            account={account}
+            balance={balance}
+            onUpdate={() => {
+              const _token = new ethers.Contract(CONTRACTS.nateToken, NateProtocolABI.abi, signer)
+              _token.balanceOf(account).then(bal => setBalance(ethers.formatEther(bal)))
+            }}
+          />
+        )}
 
         {/* Market Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
