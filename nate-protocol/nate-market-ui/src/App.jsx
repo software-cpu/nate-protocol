@@ -153,83 +153,84 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-nate-dark text-white p-8 font-sans">
-      {/* Header */}
-      <header className="flex justify-between items-center mb-12 border-b border-nate-blue/30 pb-4">
-        <div>
-          <h1 className="text-4xl font-display font-bold bg-gradient-to-r from-nate-green to-nate-blue bg-clip-text text-transparent">
-            NATE MARKET
-          </h1>
-          <p className="text-gray-400 font-body tracking-wider text-sm mt-1">
-            PREDICT. VOTE. EARN.
-          </p>
-        </div>
-        <div className="flex gap-4 items-center">
-          {account && (
-            <button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="bg-nate-blue/10 border border-nate-blue text-nate-blue px-4 py-2 rounded hover:bg-nate-blue hover:text-black transition-all font-display font-bold text-sm"
-            >
-              + CREATE MARKET
-            </button>
-          )}
-
-          {account ? (
-            <div className="text-right border-l border-gray-700 pl-4">
-              <p className="text-xs text-gray-500">YOUR BALANCE</p>
-              <p className="text-xl font-display text-nate-green">{Number(balance).toFixed(2)} $NATE</p>
-            </div>
-          ) : (
-            <button
-              onClick={connectWallet}
-              disabled={loading}
-              className="bg-nate-blue/10 text-nate-blue px-6 py-2 rounded hover:bg-nate-blue hover:text-black transition-all font-display font-bold border border-nate-blue"
-            >
-              {loading ? "CONNECTING..." : "CONNECT WALLET"}
-            </button>
-          )}
-        </div>
-      </header>
-
-      {/* Market Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {tasks.map((task) => (
-          <TaskCard
-            key={task.id}
-            task={task}
-            onBet={openBetModal}
-            connected={!!account}
-          />
-        ))}
-
-        {tasks.length === 0 && !loading && (
-          <div className="col-span-3 text-center text-gray-500 py-12">
-            No active markets. Create one!
+    <div className="min-h-screen bg-nate-dark text-white font-sans selection:bg-nate-blue selection:text-black">
+      <div className="max-w-7xl mx-auto px-4 py-12 md:px-8">
+        {/* Header */}
+        <header className="flex justify-between items-center mb-12 border-b border-nate-blue/30 pb-4">
+          <div>
+            <h1 className="text-4xl font-display font-bold bg-gradient-to-r from-nate-green to-nate-blue bg-clip-text text-transparent">
+              NATE MARKET
+            </h1>
+            <p className="text-gray-400 font-body tracking-wider text-sm mt-1">
+              PREDICT. VOTE. EARN.
+            </p>
           </div>
-        )}
+          <div className="flex gap-4 items-center">
+            {account && (
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="bg-nate-blue/10 border border-nate-blue text-nate-blue px-4 py-2 rounded hover:bg-nate-blue hover:text-black transition-all font-display font-bold text-sm"
+              >
+                + CREATE MARKET
+              </button>
+            )}
+
+            {account ? (
+              <div className="text-right border-l border-gray-700 pl-4">
+                <p className="text-xs text-gray-500">YOUR BALANCE</p>
+                <p className="text-xl font-display text-nate-green">{Number(balance).toFixed(2)} $NATE</p>
+              </div>
+            ) : (
+              <button
+                onClick={connectWallet}
+                disabled={loading}
+                className="bg-nate-blue/10 text-nate-blue px-6 py-2 rounded hover:bg-nate-blue hover:text-black transition-all font-display font-bold border border-nate-blue"
+              >
+                {loading ? "CONNECTING..." : "CONNECT WALLET"}
+              </button>
+            )}
+          </div>
+        </header>
+
+        {/* Market Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {tasks.map((task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              onBet={openBetModal}
+              connected={!!account}
+            />
+          ))}
+
+          {tasks.length === 0 && !loading && (
+            <div className="col-span-3 text-center text-gray-500 py-12">
+              No active markets. Create one!
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="mt-12 text-center text-gray-600 text-xs text-mono">
+          <p>⚠️ CONNECTS TO SEPOLIA TESTNET. DO NOT USE REAL FUNDS.</p>
+        </div>
+
+        {/* Modals */}
+        <BetModal
+          isOpen={betModal.isOpen}
+          onClose={() => setBetModal({ ...betModal, isOpen: false })}
+          task={betModal.task}
+          betYes={betModal.betYes}
+          onConfirm={handlePlaceBet}
+          loading={loading}
+        />
+
+        <CreateTaskModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onConfirm={handleCreateTask}
+          loading={loading}
       </div>
-
-      {/* Footer */}
-      <div className="mt-12 text-center text-gray-600 text-xs text-mono">
-        <p>⚠️ CONNECTS TO SEPOLIA TESTNET. DO NOT USE REAL FUNDS.</p>
-      </div>
-
-      {/* Modals */}
-      <BetModal
-        isOpen={betModal.isOpen}
-        onClose={() => setBetModal({ ...betModal, isOpen: false })}
-        task={betModal.task}
-        betYes={betModal.betYes}
-        onConfirm={handlePlaceBet}
-        loading={loading}
-      />
-
-      <CreateTaskModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onConfirm={handleCreateTask}
-        loading={loading}
-      />
     </div>
   )
 }
