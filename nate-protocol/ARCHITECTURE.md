@@ -54,6 +54,12 @@ A parimutuel prediction market.
 - **MultiSig**: Critical contract upgrades are protected by a 2-of-3 Gnosis Safe (or custom MultiSigGovernance).
 - **Timelock**: Governance actions have a 24-hour delay.
 
+## Monetization
+The protocol captures value via:
+- **Betting Rake**: 2% of resolved pools in `TaskMarket`.
+- **Mint/Redeem Fees**: 0.5% protocol toll in `StabilityEngine`.
+- **Revenue Flow**: Fees accumulate in contracts and are withdrawable by the Owner/Governance.
+
 ### 5. Private Work Verification (Phase 3)
 To prove productivity without revealing sensitive client contracts, we utilize **ZK-Email**.
 - **Mechanism**: Verifies DKIM signatures from email providers (Gmail, etc.) inside a SNARK.

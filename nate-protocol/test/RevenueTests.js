@@ -117,8 +117,9 @@ describe("Revenue & Monetization", function () {
             expect(endBal - startBal).to.equal(ethers.parseEther("199"));
 
             // Check Protocol Revenue (Minted to Engine address)
+            // 0.5 from setup + 1.0 from this test = 1.5
             const engineBal = await token.balanceOf(await stableEngine.getAddress());
-            expect(engineBal).to.equal(ethers.parseEther("1")); // 0.5% of 200
+            expect(engineBal).to.equal(ethers.parseEther("1.5"));
         });
 
         it("Should deduct 0.5% Redeem Fee", async function () {
