@@ -10,8 +10,8 @@ import CreateTaskModal from './components/CreateTaskModal'
 
 // Configuration (Replace with actual addresses)
 const CONTRACTS = {
-  taskMarket: "0x0000000000000000000000000000000000000000",
-  nateToken: "0x0000000000000000000000000000000000000000"
+  taskMarket: "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+  nateToken: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
 }
 
 function App() {
