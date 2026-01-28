@@ -28,9 +28,11 @@ async function main() {
     // Chainlink Functions config (replace with actual values for network)
     const CHAINLINK_ROUTER = hre.network.name === "sepolia"
         ? "0xb83E47C2bC239B3bf370bc41e1459A34b41238D0"  // Sepolia Router
-        : "0x0000000000000000000000000000000000000000"; // Mainnet TBD
+        : "0x65Dcc24F8ff9e51F10DCc7Ed1e4e2A61e6E14bd6"; // Ethereum Mainnet
 
-    const CHAINLINK_DON_ID = hre.ethers.encodeBytes32String("fun-ethereum-sepolia-1");
+    const CHAINLINK_DON_ID = hre.network.name === "sepolia"
+        ? hre.ethers.encodeBytes32String("fun-ethereum-sepolia-1")
+        : hre.ethers.encodeBytes32String("fun-ethereum-mainnet-1");
     const CHAINLINK_SUB_ID = 0; // You need to create this on functions.chain.link
 
     const LifeOracleV2 = await hre.ethers.getContractFactory("LifeOracleV2");
