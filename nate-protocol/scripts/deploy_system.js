@@ -33,7 +33,9 @@ async function main() {
     const CHAINLINK_DON_ID = hre.network.name === "sepolia"
         ? hre.ethers.encodeBytes32String("fun-ethereum-sepolia-1")
         : hre.ethers.encodeBytes32String("fun-ethereum-mainnet-1");
-    const CHAINLINK_SUB_ID = 0; // You need to create this on functions.chain.link
+    const CHAINLINK_SUB_ID = hre.network.name === "sepolia"
+        ? (process.env.SEPOLIA_SUB_ID || 0)
+        : (process.env.MAINNET_SUB_ID || 0);
 
     const LifeOracleV2 = await hre.ethers.getContractFactory("LifeOracleV2");
     const oracle = await LifeOracleV2.deploy(CHAINLINK_ROUTER, CHAINLINK_DON_ID, CHAINLINK_SUB_ID);

@@ -2,16 +2,24 @@ const hre = require("hardhat");
 const fs = require("fs");
 const path = require("path");
 
-const OBSERVER_ADDRESS = "0x1860697C2F47247A0Bcb7c7dE3D0624E1a9E83cB";
-
 async function main() {
     const [signer] = await hre.ethers.getSigners();
+    const network = hre.network.name;
+    console.log(`\n--- Oracle Update (${network}) ---`);
     console.log("Using Signer:", signer.address);
 
-    const oracle = await hre.ethers.getContractAt("LifeOracleV2", OBSERVER_ADDRESS, signer);
+    const deploymentPath = path.join(__dirname, `../deployment-${network}.json`);
+    if (!fs.existsSync(deploymentPath)) {
+        console.error(`❌ No deployment file found for ${network}. Deploy first.`);
+        return;
+    }
+
+    const deployment = JSON.parse(fs.readFileSync(deploymentPath, "utf8"));
+    const addresses = deployment.contracts;
+
+    const oracle = await hre.ethers.getContractAt("LifeOracleV2", addresses.LifeOracleV2, signer);
 
     // 1. Read Source Code
-    // Try calculate_score_min.js first as it's more likely to fit constraints
     const sourceFile = "calculate_score_min.js";
     const sourcePath = path.join(__dirname, "source", sourceFile);
 
@@ -42,24 +50,17 @@ async function main() {
         const tx = await oracle.updateMetrics([], { gasLimit: 500000 });
         await tx.wait();
         console.log("✅ updateMetrics() sent to Chainlink DON!");
-        console.log("   Check Etherscan or local logs for 'Fulfill' event in ~30s.");
     } catch (e) {
-        if (e.message.includes("revert")) {
-            console.error("⚠️  updateMetrics() reverted.");
-            console.error("   Possible causes:");
-            console.error("   - Subscription not funded (Check Chainlink Dashboard)");
-            console.error("   - Consumer not authorized (Check Chainlink Dashboard)");
-            console.error("   - Source code invalid format");
-        } else {
-            console.error(e);
-        }
+        console.error("❌ updateMetrics() failed.");
+        console.error(e.reason || e.message);
     }
 
     // 4. View Current Metrics
     console.log("\n=== CURRENT METRICS ===");
     const metrics = await oracle.metrics();
     console.log(`Total Value: ${hre.ethers.formatEther(metrics.totalValue)} ETH`);
-    console.log(`Last Update: ${metrics.lastUpdate > 0 ? new Date(Number(metrics.lastUpdate) * 1000).toISOString() : "Never"}`);
 }
+
+main().catch(console.error);
 
 main().catch(console.error);
