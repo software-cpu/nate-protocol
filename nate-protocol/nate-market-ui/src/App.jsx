@@ -13,6 +13,7 @@ import ActivityFeed from './components/ActivityFeed'
 import VitalSigns from './components/VitalSigns'
 import LandingPage from './components/LandingPage'
 import BuyModal from './components/BuyModal'
+import UnifiedDashboard from './components/UnifiedDashboard'
 
 // Configuration (Replace with actual addresses)
 const CONTRACTS = {
@@ -36,7 +37,7 @@ function App() {
   const [engineContract, setEngineContract] = useState(null)
 
   // View State
-  const [view, setView] = useState('landing') // 'landing' or 'market'
+  const [view, setView] = useState('landing') // 'landing', 'market', or 'dashboard'
 
   // Modal State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
@@ -205,9 +206,18 @@ function App() {
     return (
       <LandingPage
         onEnterMarket={() => setView('market')}
+        onEnterDashboard={() => setView('dashboard')}
         onBuyNate={() => {
           setIsBuyModalOpen(true);
         }}
+      />
+    )
+  }
+
+  if (view === 'dashboard') {
+    return (
+      <UnifiedDashboard
+        onBack={() => setView('market')}
       />
     )
   }
@@ -228,6 +238,22 @@ function App() {
               PREDICT. VOTE. EARN.
             </p>
           </div>
+
+          <div className="flex gap-4">
+            <button
+              onClick={() => setView('market')}
+              className={`text-sm font-display font-bold px-4 py-2 rounded transition-all ${view === 'market' ? 'bg-nate-blue text-black' : 'text-gray-400 hover:text-white'}`}
+            >
+              MARKET
+            </button>
+            <button
+              onClick={() => setView('dashboard')}
+              className={`text-sm font-display font-bold px-4 py-2 rounded transition-all ${view === 'dashboard' ? 'bg-nate-blue text-black' : 'text-gray-400 hover:text-white'}`}
+            >
+              DASHBOARD
+            </button>
+          </div>
+
           <div className="flex gap-4 items-center">
             {account && (
               <button

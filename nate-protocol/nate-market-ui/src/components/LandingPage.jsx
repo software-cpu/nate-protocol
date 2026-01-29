@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const LandingPage = ({ onEnterMarket, onBuyNate }) => {
+const LandingPage = ({ onEnterMarket, onEnterDashboard, onBuyNate }) => {
     return (
         <div className="min-h-screen bg-nate-dark text-white selection:bg-nate-blue selection:text-black relative overflow-hidden">
             {/* Background Decorative Elements */}
@@ -22,6 +22,12 @@ const LandingPage = ({ onEnterMarket, onBuyNate }) => {
                         className="text-sm font-body font-medium hover:text-nate-blue transition-colors cursor-pointer"
                     >
                         MARKET
+                    </button>
+                    <button
+                        onClick={onEnterDashboard}
+                        className="text-sm font-body font-medium hover:text-nate-blue transition-colors cursor-pointer"
+                    >
+                        DASHBOARD
                     </button>
                     <button
                         onClick={onBuyNate}
