@@ -116,6 +116,7 @@ describe("Nate Protocol - End-to-End (E2E) Integration", function () {
             // 750 USD value for 500 NATE.
             // 750 / 2500 = 0.3 ETH. Correct.
 
+            const expectedEthReturn = ethers.parseEther("0.3");
             const redeemFee = expectedEthReturn * 50n / 10000n;
             const netEthReturn = expectedEthReturn - redeemFee;
 
