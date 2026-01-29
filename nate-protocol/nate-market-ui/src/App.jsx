@@ -14,6 +14,7 @@ import VitalSigns from './components/VitalSigns'
 import LandingPage from './components/LandingPage'
 import BuyModal from './components/BuyModal'
 import UnifiedDashboard from './components/UnifiedDashboard'
+import MintBurnInterface from './components/MintBurnInterface'
 
 // Configuration (Replace with actual addresses)
 const CONTRACTS = {
@@ -37,7 +38,7 @@ function App() {
   const [engineContract, setEngineContract] = useState(null)
 
   // View State
-  const [view, setView] = useState('landing') // 'landing', 'market', or 'dashboard'
+  const [view, setView] = useState('landing') // 'landing', 'market', 'dashboard', or 'stability'
 
   // Modal State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
@@ -218,7 +219,20 @@ function App() {
     return (
       <UnifiedDashboard
         onBack={() => setView('market')}
+        onViewChange={(v) => setView(v)}
       />
+    )
+  }
+
+  if (view === 'stability') {
+    return (
+      <div className="min-h-screen bg-slate-950 pt-20">
+        <MintBurnInterface
+          walletAddress={account}
+          isConnected={!!account}
+          onBack={() => setView('market')}
+        />
+      </div>
     )
   }
 
@@ -251,6 +265,12 @@ function App() {
               className={`text-sm font-display font-bold px-4 py-2 rounded transition-all ${view === 'dashboard' ? 'bg-nate-blue text-black' : 'text-gray-400 hover:text-white'}`}
             >
               DASHBOARD
+            </button>
+            <button
+              onClick={() => setView('stability')}
+              className={`text-sm font-display font-bold px-4 py-2 rounded transition-all ${view === 'stability' ? 'bg-nate-blue text-black' : 'text-gray-400 hover:text-white'}`}
+            >
+              STABILITY
             </button>
           </div>
 

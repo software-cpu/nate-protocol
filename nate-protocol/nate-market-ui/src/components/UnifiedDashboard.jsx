@@ -47,7 +47,7 @@ const ABIS = {
     ],
 };
 
-const UnifiedDashboard = ({ onBack }) => {
+const UnifiedDashboard = ({ onBack, onViewChange }) => {
     const [loading, setLoading] = useState(true);
     const [connected, setConnected] = useState(false);
     const [walletAddress, setWalletAddress] = useState('');
@@ -509,21 +509,21 @@ const UnifiedDashboard = ({ onBack }) => {
                             <button
                                 disabled={!connected}
                                 className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed py-2 rounded-lg font-medium transition-colors"
-                                onClick={() => alert("Minting function would be called here")}
+                                onClick={() => onViewChange('stability')}
                             >
                                 Mint $NATE
                             </button>
                             <button
                                 disabled={!connected}
                                 className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed py-2 rounded-lg font-medium transition-colors"
-                                onClick={() => alert("Redemption function would be called here")}
+                                onClick={() => onViewChange('stability')}
                             >
                                 Redeem for ETH
                             </button>
                             <button
                                 disabled={!connected}
                                 className="w-full bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-600 disabled:cursor-not-allowed py-2 rounded-lg font-medium transition-colors"
-                                onClick={() => alert("Task market view would open here")}
+                                onClick={() => onViewChange('market')}
                             >
                                 View Task Market
                             </button>
