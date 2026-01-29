@@ -1,12 +1,12 @@
 {
   "network": "sepolia",
-  "timestamp": "2026-01-27T03:17:14.545Z",
+  "timestamp": "2026-01-29T08:06:26.161Z",
   "deployer": "0x4e60a79f1fdBF86283cbE9aa184d958412A762c7",
   "contracts": {
-    "LifeOracleV2": "0x1860697C2F47247A0Bcb7c7dE3D0624E1a9E83cB",
-    "NateProtocol": "0xF256c0709CCCd20eE979B21e130D43ec0Ef6DBD5",
-    "StabilityEngine": "0x6ffa606718C667fC46409E95e1fCe9832fBCeE66",
-    "GovernanceBoard": "0xFF0e1583adE773C2eb8178d01B7bFdD15C070ea4",
-    "TaskMarket": "0x236DE190344729Ed0C8AFE5c630814abb537e10d"
+    "LifeOracleV2": "0xcE2A96119D81F2E73097A4B8C342d71ef70368B2",
+    "NateProtocol": "0x9532B3831BaA989f56Bb9367034aE1096315561f",
+    "StabilityEngine": "0x360144e04e930cAb30046991DAd09499a73f6fC5",
+    "GovernanceBoard": "0x09192AC6568cf1FBC944d2AB91Cd7D06C4c2134a",
+    "TaskMarket": "0x797220d51EcD6064a19F9189704C05Ff0bfD7Fc8"
   }
 }
