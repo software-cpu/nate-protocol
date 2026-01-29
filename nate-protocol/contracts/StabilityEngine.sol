@@ -117,8 +117,10 @@ contract StabilityEngine is Ownable, AccessControl, Pausable, ReentrancyGuard {
         
         // Proportional return: (burnAmount / userTotalBalance) * userCollateral
         // But for easier MVP: (CollateralETH / NATE Supply) return? No, that's unstable.
-        // Let's go with: return ETH at current peg.
-        uint256 ethToReturn = (_amountNate * PRICE_PRECISION) / ethPriceUSD;
+        // 1. Calculate ETH Value
+        // Proportional return based on the 150% collateral ratio used for minting.
+        // ETH Amount = (NATE Amount * 1.5) / ETH Price
+        uint256 ethToReturn = (_amountNate * MIN_COLLATERAL_RATIO * PRICE_PRECISION) / (100 * ethPriceUSD);
         require(ethToReturn <= userCollateral, "Cannot burn more than collateralized");
 
         userCollateralDeposits[msg.sender] -= ethToReturn;
