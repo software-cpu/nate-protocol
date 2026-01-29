@@ -116,10 +116,16 @@ contract StabilityEngine is Ownable, AccessControl, Pausable, ReentrancyGuard {
             require(success, "Excess refund failed");
         }
 
-        // 5. Mint tokens
-        nateToken.mint(msg.sender, _amount);
+        // 5. Mint tokens (minus fee)
+        uint256 fee = (_amount * mintFeeBps) / 10000;
+        uint256 netAmount = _amount - fee;
+
+        nateToken.mint(msg.sender, netAmount);
+        if (fee > 0) {
+            nateToken.mint(address(this), fee);
+        }
         
-        emit Minted(msg.sender, _amount, requiredCollateralETH, block.number);
+        emit Minted(msg.sender, netAmount, requiredCollateralETH, block.number);
     }
 
     /**
@@ -144,15 +150,26 @@ contract StabilityEngine is Ownable, AccessControl, Pausable, ReentrancyGuard {
         uint256 ethToReturn = (_amountNate * MIN_COLLATERAL_RATIO * PRICE_PRECISION) / (100 * ethPriceUSD);
         require(ethToReturn <= userCollateral, "Cannot burn more than collateralized");
 
+        uint256 fee = (ethToReturn * redeemFeeBps) / 10000;
+        uint256 netEth = ethToReturn - fee;
+        accumulatedEthFees += fee;
+
         userCollateralDeposits[msg.sender] -= ethToReturn;
         totalETHCollateral -= ethToReturn;
 
         nateToken.burn(msg.sender, _amountNate);
         
-        (bool success, ) = payable(msg.sender).call{value: ethToReturn}("");
+        (bool success, ) = payable(msg.sender).call{value: netEth}("");
         require(success, "ETH return failed");
         
-        emit Burned(msg.sender, _amountNate, ethToReturn);
+        emit Burned(msg.sender, _amountNate, netEth);
+    }
+
+    /**
+     * @notice Alias for burn
+     */
+    function redeem(uint256 _amountNate) external {
+        this.burn(_amountNate);
     }
 
     // ============ Emergency Functions ============
@@ -223,6 +240,20 @@ contract StabilityEngine is Ownable, AccessControl, Pausable, ReentrancyGuard {
     function setGovernanceBoard(address _board) external onlyOwner {
         governanceBoard = _board;
         emit GovernanceBoardUpdated(_board);
+    }
+
+    function withdrawEthFees(address _to) external onlyOwner {
+        uint256 amount = accumulatedEthFees;
+        require(amount > 0, "No fees");
+        accumulatedEthFees = 0;
+        (bool success, ) = payable(_to).call{value: amount}("");
+        require(success, "Withdraw failed");
+    }
+
+    function withdrawNateFees(address _to) external onlyOwner {
+        uint256 amount = nateToken.balanceOf(address(this));
+        require(amount > 0, "No NATE fees");
+        nateToken.transfer(_to, amount);
     }
 
     receive() external payable {
