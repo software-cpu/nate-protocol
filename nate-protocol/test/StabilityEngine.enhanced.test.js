@@ -16,16 +16,9 @@ describe("StabilityEngine - Enhanced Test Suite", function () {
         const nateToken = await NateProtocol.deploy(owner.address);
         await nateToken.waitForDeployment();
 
-        // Deploy mock LifeOracle (using V2)
-        // Actual constructor: address router, bytes32 _donId, uint64 _subscriptionId
-        const LifeOracle = await ethers.getContractFactory("LifeOracleV2");
-        const mockRouter = owner.address; // Use owner as a mock router for testing
-        const mockDonId = ethers.encodeBytes32String("fun-ethereum-mainnet-1");
-        const lifeOracle = await LifeOracle.deploy(
-            mockRouter,
-            mockDonId,
-            123 // subscription ID
-        );
+        // Deploy MockLifeOracle for predictable testing
+        const MockLifeOracle = await ethers.getContractFactory("MockLifeOracle");
+        const lifeOracle = await MockLifeOracle.deploy();
         await lifeOracle.waitForDeployment();
 
         // Deploy StabilityEngine
@@ -38,6 +31,10 @@ describe("StabilityEngine - Enhanced Test Suite", function () {
 
         // Setup Permissions
         await nateToken.setStabilityEngine(await engine.getAddress());
+
+        // Initialize oracle with some human value to make system healthy
+        const initialHumanValue = ethers.parseEther("1000"); // $1000 human value
+        await lifeOracle.setTotalValue(initialHumanValue);
 
         return {
             nateToken,
@@ -74,11 +71,12 @@ describe("StabilityEngine - Enhanced Test Suite", function () {
             expect(await engine.owner()).to.equal(owner.address);
         });
 
-        it("Should initialize with zero fees and supply", async function () {
-            const { engine, nateToken } = await loadFixture(deployStabilityEngineFixture);
+        it("Should initialize with zero ETH collateral and supply", async function () {
+            const { engine } = await loadFixture(deployStabilityEngineFixture);
 
-            expect(await engine.accumulatedEthFees()).to.equal(0);
-            expect(await nateToken.totalSupply()).to.equal(0);
+            expect(await engine.totalETHCollateral()).to.equal(0);
+            const stats = await engine.getSystemStats();
+            expect(stats.supply).to.equal(0);
         });
     });
 
@@ -88,13 +86,120 @@ describe("StabilityEngine - Enhanced Test Suite", function () {
 
     describe("Minting", function () {
 
-        it("Should allow purchase with ETH at $1.00 peg", async function () {
-            const { engine, nateToken, user1, lifeOracle, owner } = await loadFixture(deployStabilityEngineFixture);
+        it("Should mint tokens with correct collateral", async function () {
+            const { engine, nateToken, user1 } = await loadFixture(deployStabilityEngineFixture);
 
-            // Needs valuation for over-collateralization check
-            // We'll use the LifeOracle's metrics for this
-            // But since LifeOracleV2 requires a Chainlink callback, we'll manually set valuation if possible or mock it
-            // Our upgraded contract will need to handle this.
+            const mintAmount = ethers.parseEther("100"); // 100 $NATE ($100)
+            // Required: 150% CR -> $150 collateral
+            // $2500 per ETH -> 150/2500 = 0.06 ETH
+            const requiredCollateral = ethers.parseEther("0.06");
+
+            await engine.connect(user1).mint(mintAmount, { value: requiredCollateral });
+
+            expect(await nateToken.balanceOf(user1.address)).to.equal(mintAmount);
+            expect(await engine.userCollateralDeposits(user1.address)).to.equal(requiredCollateral);
+        });
+
+        it("Should reject mint with insufficient collateral", async function () {
+            const { engine, user1 } = await loadFixture(deployStabilityEngineFixture);
+
+            const mintAmount = ethers.parseEther("100");
+            const insufficientCollateral = ethers.parseEther("0.05"); // Should be 0.06
+
+            await expect(
+                engine.connect(user1).mint(mintAmount, { value: insufficientCollateral })
+            ).to.be.revertedWith("Insufficient collateral");
+        });
+
+        it("Should refund excess ETH sent", async function () {
+            const { engine, user1 } = await loadFixture(deployStabilityEngineFixture);
+
+            const mintAmount = ethers.parseEther("100");
+            const requiredCollateral = ethers.parseEther("0.06");
+            const excessETH = ethers.parseEther("0.1");
+
+            const balanceBefore = await ethers.provider.getBalance(user1.address);
+
+            // We subtract gas in the expectation
+            const tx = await engine.connect(user1).mint(mintAmount, { value: excessETH });
+            const receipt = await tx.wait();
+            const gasUsed = receipt.gasUsed * receipt.gasPrice;
+
+            const balanceAfter = await ethers.provider.getBalance(user1.address);
+
+            // Expected = Before - RequiredCollateral - Gas
+            const expectedBalance = balanceBefore - requiredCollateral - gasUsed;
+            expect(balanceAfter).to.be.closeTo(expectedBalance, ethers.parseEther("0.0001"));
+        });
+
+        it("Should prevent reentrancy attacks on mint", async function () {
+            const { engine, user1 } = await loadFixture(deployStabilityEngineFixture);
+
+            const MaliciousContract = await ethers.getContractFactory("MaliciousMinter");
+            const malicious = await MaliciousContract.deploy(await engine.getAddress());
+
+            await expect(
+                malicious.attack({ value: ethers.parseEther("1") })
+            ).to.be.reverted; // ReentrancyGuard: reentrant call or similar
+        });
+    });
+
+    // ============================================
+    // BURNING/REDEMPTION TESTS
+    // ============================================
+
+    describe("Burning/Redemption", function () {
+
+        it("Should burn tokens and return collateral", async function () {
+            const { engine, nateToken, user1 } = await loadFixture(deployStabilityEngineFixture);
+
+            const mintAmount = ethers.parseEther("100");
+            const collateral = ethers.parseEther("0.06");
+            await engine.connect(user1).mint(mintAmount, { value: collateral });
+
+            const burnAmount = ethers.parseEther("50");
+            const expectedReturn = collateral / 2n;
+
+            const balanceBefore = await ethers.provider.getBalance(user1.address);
+
+            const tx = await engine.connect(user1).burn(burnAmount);
+            const receipt = await tx.wait();
+            const gasUsed = receipt.gasUsed * receipt.gasPrice;
+
+            const balanceAfter = await ethers.provider.getBalance(user1.address);
+
+            expect(await nateToken.balanceOf(user1.address)).to.equal(mintAmount - burnAmount);
+            expect(balanceAfter).to.be.closeTo(
+                balanceBefore + expectedReturn - gasUsed,
+                ethers.parseEther("0.0001")
+            );
+        });
+    });
+
+    // ============================================
+    // EMERGENCY FUNCTIONS TESTS
+    // ============================================
+
+    describe("Emergency Functions", function () {
+
+        it("Should allow emergency withdrawal when paused", async function () {
+            const { engine, nateToken, owner, user1 } = await loadFixture(deployStabilityEngineFixture);
+
+            await engine.connect(user1).mint(ethers.parseEther("100"), {
+                value: ethers.parseEther("0.06")
+            });
+
+            await engine.connect(owner).pause();
+
+            const balanceBefore = await ethers.provider.getBalance(user1.address);
+            const tx = await engine.connect(user1).emergencyWithdraw();
+            const receipt = await tx.wait();
+            const gasUsed = receipt.gasUsed * receipt.gasPrice;
+
+            const balanceAfter = await ethers.provider.getBalance(user1.address);
+
+            expect(balanceAfter).to.be.gt(balanceBefore - gasUsed);
+            expect(await nateToken.balanceOf(user1.address)).to.equal(0);
         });
     });
 });
