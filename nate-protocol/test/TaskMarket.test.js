@@ -103,9 +103,10 @@ describe("TaskMarket", function () {
             const balanceAfter = await token.balanceOf(user1.address);
 
             // User1 bet 500 on YES, total pool = 800
-            // User1 wins entire pool: 800 NATE
+            // Protocol Fee (2%) = 16. Result Pool = 784.
+            // User1 wins entire pool: 784 NATE
             const profit = balanceAfter - balanceBefore;
-            expect(profit).to.equal(ethers.parseEther("800"));
+            expect(profit).to.equal(ethers.parseEther("784"));
         });
 
         it("Should reject claims from NO losers", async function () {
