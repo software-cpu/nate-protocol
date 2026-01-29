@@ -83,7 +83,7 @@ describe("Nate Protocol - End-to-End (E2E) Integration", function () {
             const mintAmount = ethers.parseEther("1000");
             const collateral = ethers.parseEther("0.6");
 
-            await stabilityEngine.connect(user1).mint(mintAmount, { value: collateral });
+            await stabilityEngine.connect(user1).mintWithCollateral(mintAmount, { value: collateral });
             expect(await nateToken.balanceOf(user1.address)).to.equal(mintAmount);
 
             // --- Phase 3: Marketplace Interaction ---

@@ -94,7 +94,7 @@ describe("StabilityEngine - Enhanced Test Suite", function () {
             // $2500 per ETH -> 150/2500 = 0.06 ETH
             const requiredCollateral = ethers.parseEther("0.06");
 
-            await engine.connect(user1).mint(mintAmount, { value: requiredCollateral });
+            await engine.connect(user1).mintWithCollateral(mintAmount, { value: requiredCollateral });
 
             expect(await nateToken.balanceOf(user1.address)).to.equal(mintAmount);
             expect(await engine.userCollateralDeposits(user1.address)).to.equal(requiredCollateral);
@@ -107,7 +107,7 @@ describe("StabilityEngine - Enhanced Test Suite", function () {
             const insufficientCollateral = ethers.parseEther("0.05"); // Should be 0.06
 
             await expect(
-                engine.connect(user1).mint(mintAmount, { value: insufficientCollateral })
+                engine.connect(user1).mintWithCollateral(mintAmount, { value: insufficientCollateral })
             ).to.be.revertedWith("Insufficient collateral");
         });
 
@@ -121,7 +121,7 @@ describe("StabilityEngine - Enhanced Test Suite", function () {
             const balanceBefore = await ethers.provider.getBalance(user1.address);
 
             // We subtract gas in the expectation
-            const tx = await engine.connect(user1).mint(mintAmount, { value: excessETH });
+            const tx = await engine.connect(user1).mintWithCollateral(mintAmount, { value: excessETH });
             const receipt = await tx.wait();
             const gasUsed = receipt.gasUsed * receipt.gasPrice;
 
@@ -155,7 +155,7 @@ describe("StabilityEngine - Enhanced Test Suite", function () {
 
             const mintAmount = ethers.parseEther("100");
             const collateral = ethers.parseEther("0.06");
-            await engine.connect(user1).mint(mintAmount, { value: collateral });
+            await engine.connect(user1).mintWithCollateral(mintAmount, { value: collateral });
 
             const burnAmount = ethers.parseEther("50");
             const expectedReturn = collateral / 2n;
@@ -185,7 +185,7 @@ describe("StabilityEngine - Enhanced Test Suite", function () {
         it("Should allow emergency withdrawal when paused", async function () {
             const { engine, nateToken, owner, user1 } = await loadFixture(deployStabilityEngineFixture);
 
-            await engine.connect(user1).mint(ethers.parseEther("100"), {
+            await engine.connect(user1).mintWithCollateral(ethers.parseEther("100"), {
                 value: ethers.parseEther("0.06")
             });
 
