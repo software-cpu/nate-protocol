@@ -102,10 +102,13 @@ async function main() {
     console.log(`   ✓ GovernanceBoard: ${boardAddress}`);
     console.log(`   ✓ Board reads market signals via sigmoid function\n`);
 
-    // ========== STEP 7: Transfer Engine Ownership to Board ==========
+    // ========== STEP 7: Final Governance Configuration ==========
     console.log("─────────────────────────────────────────────────────────────────");
-    console.log("  STEP 7: Transferring Engine Ownership to Board");
+    console.log("  STEP 7: Final Governance Configuration");
     console.log("─────────────────────────────────────────────────────────────────");
+
+    await engine.setGovernanceBoard(boardAddress);
+    console.log(`   ✓ StabilityEngine.setGovernanceBoard(${boardAddress})`);
 
     await engine.transferOwnership(boardAddress);
     console.log(`   ✓ StabilityEngine.owner = GovernanceBoard`);
@@ -139,7 +142,6 @@ async function main() {
         contracts: {
             LifeOracleV2: oracleAddress,
             NateProtocol: tokenAddress,
-            StabilityEngine: engineAddress,
             StabilityEngine: engineAddress,
             GovernanceBoard: boardAddress,
             TaskMarket: marketAddress
