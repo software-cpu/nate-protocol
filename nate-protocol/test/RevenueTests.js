@@ -140,10 +140,10 @@ describe("Revenue & Monetization", function () {
 
             const ethBalAfter = await ethers.provider.getBalance(user1.address);
 
-            // 0.04 ETH = 40000000000000000 WEI
-            // 0.0002 ETH = 200000000000000 WEI
-            // Expected Net = 39800000000000000 WEI
-            const expectedNet = ethers.parseEther("0.0398");
+            // 0.06 ETH = 60000000000000000 WEI
+            // 0.0003 ETH = 300000000000000 WEI
+            // Expected Net = 59700000000000000 WEI
+            const expectedNet = ethers.parseEther("0.0597");
 
             // Check delta + gas
             const delta = ethBalAfter - ethBalBefore + gasSpent;
@@ -155,7 +155,7 @@ describe("Revenue & Monetization", function () {
 
             // Check Accumulated Fees
             const fees = await stableEngine.accumulatedEthFees();
-            expect(fees).to.equal(ethers.parseEther("0.0002"));
+            expect(fees).to.equal(ethers.parseEther("0.0003"));
         });
 
         it("Should allow withdrawing ETH fees", async function () {
@@ -172,7 +172,7 @@ describe("Revenue & Monetization", function () {
 
             const ownerEthAfter = await ethers.provider.getBalance(owner.address);
 
-            const expectedAmt = ethers.parseEther("0.0002");
+            const expectedAmt = ethers.parseEther("0.0003");
             expect(ownerEthAfter - ownerEthBefore + gasSpent).to.equal(expectedAmt);
         });
     });

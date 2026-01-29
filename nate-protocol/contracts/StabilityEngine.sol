@@ -133,18 +133,24 @@ contract StabilityEngine is Ownable, AccessControl, Pausable, ReentrancyGuard {
      * @param _amountNate Amount of NATE to burn
      */
     function burn(uint256 _amountNate) external whenNotPaused nonReentrant {
+        _burn(msg.sender, _amountNate);
+    }
+
+    /**
+     * @notice Redeem NATE for ETH collateral.
+     * @param _amountNate Amount of NATE to burn
+     */
+    function redeem(uint256 _amountNate) external whenNotPaused nonReentrant {
+        _burn(msg.sender, _amountNate);
+    }
+
+    function _burn(address _user, uint256 _amountNate) internal {
         require(_amountNate > 0, "Amount must be > 0");
-        require(nateToken.balanceOf(msg.sender) >= _amountNate, "Insufficient balance");
+        require(nateToken.balanceOf(_user) >= _amountNate, "Insufficient balance");
         
-        uint256 userTotalNate = nateToken.balanceOf(msg.sender); // This is slightly flawed as we don't know exactly what % of users current balance is from collateral vs market buy, but for simplicity we'll assume they can only burn what they have collateral for if we track it strictly.
-        // Actually, let's just use the proportional collateral return logic.
-        
-        uint256 userCollateral = userCollateralDeposits[msg.sender];
+        uint256 userCollateral = userCollateralDeposits[_user];
         require(userCollateral > 0, "No collateral to return");
         
-        // Proportional return: (burnAmount / userTotalBalance) * userCollateral
-        // But for easier MVP: (CollateralETH / NATE Supply) return? No, that's unstable.
-        // 1. Calculate ETH Value
         // Proportional return based on the 150% collateral ratio used for minting.
         // ETH Amount = (NATE Amount * 1.5) / ETH Price
         uint256 ethToReturn = (_amountNate * MIN_COLLATERAL_RATIO * PRICE_PRECISION) / (100 * ethPriceUSD);
@@ -154,22 +160,15 @@ contract StabilityEngine is Ownable, AccessControl, Pausable, ReentrancyGuard {
         uint256 netEth = ethToReturn - fee;
         accumulatedEthFees += fee;
 
-        userCollateralDeposits[msg.sender] -= ethToReturn;
+        userCollateralDeposits[_user] -= ethToReturn;
         totalETHCollateral -= ethToReturn;
 
-        nateToken.burn(msg.sender, _amountNate);
+        nateToken.burn(_user, _amountNate);
         
-        (bool success, ) = payable(msg.sender).call{value: netEth}("");
+        (bool success, ) = payable(_user).call{value: netEth}("");
         require(success, "ETH return failed");
         
-        emit Burned(msg.sender, _amountNate, netEth);
-    }
-
-    /**
-     * @notice Alias for burn
-     */
-    function redeem(uint256 _amountNate) external {
-        this.burn(_amountNate);
+        emit Burned(_user, _amountNate, netEth);
     }
 
     // ============ Emergency Functions ============
