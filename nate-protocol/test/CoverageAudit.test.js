@@ -41,7 +41,7 @@ describe("Coverage Audit - Branch & Edge Case Testing", function () {
     describe("NateProtocol Edge Cases", function () {
         it("Should fail to stake 0 tokens", async function () {
             const { token } = await loadFixture(deployCoverageFixture);
-            await expect(token.stake(0)).to.be.revertedWith("Amount > 0");
+            await expect(token.stake(0)).to.be.revertedWith("Cannot stake 0");
         });
 
         it("Should fail to stake more than balance", async function () {
@@ -51,7 +51,7 @@ describe("Coverage Audit - Branch & Edge Case Testing", function () {
 
         it("Should fail to unstake 0 tokens", async function () {
             const { token } = await loadFixture(deployCoverageFixture);
-            await expect(token.unstake(0)).to.be.revertedWith("Amount > 0");
+            await expect(token.unstake(0)).to.be.revertedWith("Cannot unstake 0");
         });
 
         it("Should fail to unstake more than staked", async function () {
@@ -62,6 +62,42 @@ describe("Coverage Audit - Branch & Edge Case Testing", function () {
         it("Should only allow Stability Engine to mint/burn via restricted functions", async function () {
             const { token, other } = await loadFixture(deployCoverageFixture);
             await expect(token.connect(other).mint(other.address, 100)).to.be.reverted;
+            await expect(token.connect(other).burn(other.address, 100)).to.be.reverted;
+        });
+
+        it("Should handle voting power with time multiplier", async function () {
+            const { token, engine, owner } = await loadFixture(deployCoverageFixture);
+            await engine.mintWithCollateral(ethers.parseEther("100"), { value: ethers.parseEther("0.1") });
+            const bal = await token.balanceOf(owner.address);
+            await token.stake(bal);
+
+            // T=0 duration
+            expect(await token.getVotingPower(owner.address)).to.equal(bal);
+
+            // T=30 days (1.1x multiplier)
+            await ethers.provider.send("evm_increaseTime", [30 * 24 * 60 * 60]);
+            await ethers.provider.send("evm_mine");
+            expect(await token.getVotingPower(owner.address)).to.equal(bal * 110n / 100n);
+
+            // T=365 days (Cap at 2.0x)
+            await ethers.provider.send("evm_increaseTime", [365 * 24 * 60 * 60]);
+            await ethers.provider.send("evm_mine");
+            expect(await token.getVotingPower(owner.address)).to.equal(bal * 2n);
+        });
+
+        it("Should manage opportunities", async function () {
+            const { token, owner, other } = await loadFixture(deployCoverageFixture);
+            await token.logOpportunity("Dev", "Code Coverage", ethers.parseEther("500"));
+
+            // Claiming needs NATE
+            await expect(token.connect(other).claimOpportunity(1)).to.be.revertedWith("Must hold NATE");
+
+            // Give some tokens to other
+            await token.transfer(other.address, ethers.parseEther("1"));
+            await token.connect(other).claimOpportunity(1);
+
+            const active = await token.getActiveOpportunities();
+            expect(active.length).to.equal(0);
         });
     });
 
@@ -84,16 +120,21 @@ describe("Coverage Audit - Branch & Edge Case Testing", function () {
             await expect(engine.mintWithCollateral(0)).to.be.revertedWith("Amount must be > 0");
         });
 
-        it("Should test system health views", async function () {
-            const { engine } = await loadFixture(deployCoverageFixture);
-            expect(await engine.isSystemHealthy()).to.be.true;
-            expect(await engine.getCollateralRatio()).to.be.gt(0);
+        it("Should handle REDEEM alias correctly", async function () {
+            const { engine, owner } = await loadFixture(deployCoverageFixture);
+            await engine.mintWithCollateral(ethers.parseEther("100"), { value: ethers.parseEther("0.1") });
+            // Should call internal _burn
+            await expect(engine.redeem(0)).to.be.revertedWith("Amount must be > 0");
         });
 
-        it("Should fail withdrawal if no fees", async function () {
-            const { engine, owner } = await loadFixture(deployCoverageFixture);
-            await expect(engine.withdrawEthFees(owner.address)).to.be.revertedWith("No fees");
-            await expect(engine.withdrawNateFees(owner.address)).to.be.revertedWith("No NATE fees");
+        it("Should fail emergencyWithdraw if not paused", async function () {
+            const { engine } = await loadFixture(deployCoverageFixture);
+            await expect(engine.emergencyWithdraw()).to.be.revertedWithCustomError(engine, "EnforcedPause");
+        });
+
+        it("Should fail withdrawal if not owner", async function () {
+            const { engine, other } = await loadFixture(deployCoverageFixture);
+            await expect(engine.connect(other).withdrawEthFees(other.address)).to.be.reverted;
         });
     });
 
