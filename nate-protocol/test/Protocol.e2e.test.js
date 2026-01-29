@@ -27,14 +27,17 @@ describe("Nate Protocol - End-to-End (E2E) Integration", function () {
 
         // 4. Deploy Task Market
         const MarketFactory = await ethers.getContractFactory("TaskMarket");
-        const taskMarket = await MarketFactory.deploy(await nateToken.getAddress());
+        const taskMarket = await MarketFactory.deploy(
+            await nateToken.getAddress(),
+            await mockOracle.getAddress()
+        );
         await taskMarket.waitForDeployment();
 
         // 5. Deploy Governance Board
         const GovernanceFactory = await ethers.getContractFactory("GovernanceBoard");
         const governanceBoard = await GovernanceFactory.deploy(
             await stabilityEngine.getAddress(),
-            await mockOracle.getAddress()
+            await taskMarket.getAddress()
         );
         await governanceBoard.waitForDeployment();
 
@@ -76,7 +79,7 @@ describe("Nate Protocol - End-to-End (E2E) Integration", function () {
             // --- Phase 2: User Onboarding (Minting) ---
             // User1 mints 1000 NATE
             // 150% CR -> $1500 collateral needed
-            // ETH @ $2500 -> 1500/2500 = 0.6 ETH
+            // ETH @ $2500 -> 1500/2500 = 0.06 ETH
             const mintAmount = ethers.parseEther("1000");
             const collateral = ethers.parseEther("0.6");
 
@@ -85,24 +88,32 @@ describe("Nate Protocol - End-to-End (E2E) Integration", function () {
 
             // --- Phase 3: Marketplace Interaction ---
             // owner logs a task in TaskMarket
-            const taskValue = ethers.parseEther("100"); // $100 task
-            await taskMarket.createTask("Improve E2E Tests", "Engineering", taskValue);
+            // TimeHorizon.IMMEDIATE is 0
+            await taskMarket.createTask("Improve E2E Tests", 0, 3600);
 
-            // User1 stakes NATE to get voting power in nateToken (logic might be in nateToken or Governance)
-            // Note: Our NateProtocol.sol has stake() and getVotingPower()
+            // User1 stakes NATE to get voting power
             await nateToken.connect(user1).stake(mintAmount);
             const votingPower = await nateToken.getVotingPower(user1.address);
             expect(votingPower).to.be.gt(0);
 
             // --- Phase 4: Stability & Redemption ---
-            // System remains healthy
-            const status = await stabilityEngine.getSystemStats();
-            expect(status.healthy).to.be.true;
+            const stats = await stabilityEngine.getSystemStats();
+            expect(stats.healthy).to.be.true;
 
             // User1 unstakes and redeems half
             await nateToken.connect(user1).unstake(mintAmount);
             const burnAmount = ethers.parseEther("500");
-            const expectedEthReturn = ethers.parseEther("0.3"); // Half of 0.6
+
+            // Correct logic (from StabilityEngine upgrade):
+            // ethToReturn = (_amountNate * 1.5 * precision) / (100 * ethPrice)
+            // (500 * 1.5 * 1e8) / (100 * 2500 * 1e8) = 750 / 250000 = 0.003? 
+            // Wait, NATE is 1e18. 
+            // (500e18 * 1.5 * 1e8) / (100 * 2500 * 1e8) = 750e18 / 250000 = 0.003e18?
+            // No, 1500 USD value for 1000 NATE.
+            // 750 USD value for 500 NATE.
+            // 750 / 2500 = 0.3 ETH. Correct.
+
+            const expectedEthReturn = ethers.parseEther("0.3");
 
             const preBalance = await ethers.provider.getBalance(user1.address);
             const tx = await stabilityEngine.connect(user1).burn(burnAmount);
