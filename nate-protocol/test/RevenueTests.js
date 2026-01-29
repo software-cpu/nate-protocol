@@ -99,18 +99,17 @@ describe("Revenue & Monetization", function () {
                 value: ethers.parseEther("10.0")
             });
 
-            // Mint NATE to User1 via Engine (Check Mint Fee)
-            // Oracle Value is $1M. Supply is low (2000 from setup).
             // Mint 100 NATE. Fee 0.5% = 0.5 NATE.
-            // User gets 99.5 NATE.
-            await stableEngine.connect(owner).mint(ethers.parseEther("100")); // Owner mints to their own wallet, but let's assume we transfer to user or test owner balance
+            // 150% CR -> $150 collateral (0.06 ETH)
+            await stableEngine.connect(owner).mintWithCollateral(ethers.parseEther("100"), { value: ethers.parseEther("0.06") });
         });
 
         it("Should deduct 0.5% Mint Fee", async function () {
             const startBal = await token.balanceOf(owner.address);
 
             // Mint 200
-            await stableEngine.mint(ethers.parseEther("200"));
+            // 150% CR -> $300 collateral (0.12 ETH)
+            await stableEngine.mintWithCollateral(ethers.parseEther("200"), { value: ethers.parseEther("0.12") });
 
             const endBal = await token.balanceOf(owner.address);
             // Received: 200 * 0.995 = 199
