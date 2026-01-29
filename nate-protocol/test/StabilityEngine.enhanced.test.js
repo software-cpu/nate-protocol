@@ -170,9 +170,12 @@ describe("StabilityEngine - Enhanced Test Suite", function () {
 
             const balanceAfter = await ethers.provider.getBalance(user1.address);
 
-            expect(await nateToken.balanceOf(user1.address)).to.equal(mintAmount - burnAmount);
+            const redeemFee = expectedReturn * 50n / 10000n;
+            const netReturn = expectedReturn - redeemFee;
+
+            expect(await nateToken.balanceOf(user1.address)).to.equal(ethers.parseEther("49.5"));
             expect(balanceAfter).to.be.closeTo(
-                balanceBefore + expectedReturn - gasUsed,
+                balanceBefore + netReturn - gasUsed,
                 ethers.parseEther("0.0001")
             );
         });
