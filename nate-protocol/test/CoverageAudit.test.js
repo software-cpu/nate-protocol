@@ -66,7 +66,7 @@ describe("Coverage Audit - Branch & Edge Case Testing", function () {
                 .to.be.revertedWithCustomError(token, "AccessControlUnauthorizedAccount")
                 .withArgs(other.address, MINTER_ROLE);
 
-            await expect(token.connect(other).burn(other.address, 100))
+            await expect(token.connect(other)["burn(address,uint256)"](other.address, 100))
                 .to.be.revertedWithCustomError(token, "AccessControlUnauthorizedAccount")
                 .withArgs(other.address, MINTER_ROLE);
         });
@@ -74,21 +74,21 @@ describe("Coverage Audit - Branch & Edge Case Testing", function () {
         it("Should handle voting power with time multiplier", async function () {
             const { token, engine, owner } = await loadFixture(deployCoverageFixture);
             await engine.mintWithCollateral(ethers.parseEther("100"), { value: ethers.parseEther("0.1") });
-            const bal = await token.balanceOf(owner.address);
-            await token.stake(bal);
+            const amountToStake = await token.balanceOf(owner.address);
+            await token.stake(amountToStake);
 
             // T=0 duration
-            expect(await token.getVotingPower(owner.address)).to.equal(bal);
+            expect(await token.getVotingPower(owner.address)).to.equal(amountToStake);
 
             // T=30 days (1.1x multiplier)
             await ethers.provider.send("evm_increaseTime", [30 * 24 * 60 * 60]);
             await ethers.provider.send("evm_mine");
-            expect(await token.getVotingPower(owner.address)).to.equal(bal * 110n / 100n);
+            expect(await token.getVotingPower(owner.address)).to.equal(amountToStake * 110n / 100n);
 
             // T=365 days (Cap at 2.0x)
             await ethers.provider.send("evm_increaseTime", [365 * 24 * 60 * 60]);
             await ethers.provider.send("evm_mine");
-            expect(await token.getVotingPower(owner.address)).to.equal(bal * 2n);
+            expect(await token.getVotingPower(owner.address)).to.equal(amountToStake * 2n);
         });
 
         it("Should manage opportunities", async function () {
@@ -100,8 +100,8 @@ describe("Coverage Audit - Branch & Edge Case Testing", function () {
 
             // Give some tokens to other
             await engine.mintWithCollateral(ethers.parseEther("10"), { value: ethers.parseEther("0.01") });
-            const bal = await token.balanceOf(owner.address);
-            await token.transfer(other.address, bal);
+            const ownerBalance = await token.balanceOf(owner.address);
+            await token.transfer(other.address, ownerBalance);
 
             await token.connect(other).claimOpportunity(1);
 
