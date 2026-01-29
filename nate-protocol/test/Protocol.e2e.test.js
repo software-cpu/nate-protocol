@@ -114,7 +114,8 @@ describe("Nate Protocol - End-to-End (E2E) Integration", function () {
             // 750 USD value for 500 NATE.
             // 750 / 2500 = 0.3 ETH. Correct.
 
-            const expectedEthReturn = ethers.parseEther("0.3");
+            const redeemFee = expectedEthReturn * 50n / 10000n;
+            const netEthReturn = expectedEthReturn - redeemFee;
 
             const preBalance = await ethers.provider.getBalance(user1.address);
             const tx = await stabilityEngine.connect(user1).burn(burnAmount);
@@ -122,10 +123,11 @@ describe("Nate Protocol - End-to-End (E2E) Integration", function () {
             const gasUsed = receipt.gasUsed * receipt.gasPrice;
 
             const postBalance = await ethers.provider.getBalance(user1.address);
-            expect(postBalance - preBalance).to.be.closeTo(expectedEthReturn - gasUsed, ethers.parseEther("0.001"));
+            expect(postBalance - preBalance).to.be.closeTo(netEthReturn - gasUsed, ethers.parseEther("0.001"));
 
             // Final checks
-            expect(await nateToken.balanceOf(user1.address)).to.equal(burnAmount);
+            // 995 - 500 = 495
+            expect(await nateToken.balanceOf(user1.address)).to.equal(ethers.parseEther("495"));
             expect(await stabilityEngine.totalETHCollateral()).to.equal(ethers.parseEther("0.3"));
         });
     });
