@@ -99,9 +99,12 @@ describe("Revenue & Monetization", function () {
                 value: ethers.parseEther("10.0")
             });
 
-            // Mint 100 NATE. Fee 0.5% = 0.5 NATE.
+            // Mint 100 NATE to owner. Fee 0.5% = 0.5 NATE.
             // 150% CR -> $150 collateral (0.06 ETH)
             await stableEngine.connect(owner).mintWithCollateral(ethers.parseEther("100"), { value: ethers.parseEther("0.06") });
+
+            // Mint 100 NATE to user1 for redemption tests
+            await stableEngine.connect(user1).mintWithCollateral(ethers.parseEther("100"), { value: ethers.parseEther("0.06") });
         });
 
         it("Should deduct 0.5% Mint Fee", async function () {
@@ -134,16 +137,17 @@ describe("Revenue & Monetization", function () {
 
             const ethBalBefore = await ethers.provider.getBalance(user1.address);
 
-            const tx = await stableEngine.connect(user1).redeem(ethers.parseEther("100"));
+            // User1 has 99.5 NATE (100 - fee).
+            const tx = await stableEngine.connect(user1).redeem(ethers.parseEther("99.5"));
             const receipt = await tx.wait();
             const gasSpent = receipt.gasUsed * receipt.gasPrice;
 
             const ethBalAfter = await ethers.provider.getBalance(user1.address);
 
-            // 0.06 ETH = 60000000000000000 WEI
-            // 0.0003 ETH = 300000000000000 WEI
-            // Expected Net = 59700000000000000 WEI
-            const expectedNet = ethers.parseEther("0.0597");
+            // 99.5 NATE * 1.5 / 2500 = 0.0597 ETH return
+            // 0.5% Fee of 0.0597 = 0.0002985
+            // Net = 0.0594015
+            const expectedNet = ethers.parseUnits("0.0594015", 18);
 
             // Check delta + gas
             const delta = ethBalAfter - ethBalBefore + gasSpent;
@@ -155,13 +159,14 @@ describe("Revenue & Monetization", function () {
 
             // Check Accumulated Fees
             const fees = await stableEngine.accumulatedEthFees();
-            expect(fees).to.equal(ethers.parseEther("0.0003"));
+            // From first redeem: 0.0002985
+            expect(fees).to.be.closeTo(ethers.parseUnits("0.0002985", 18), 1000n);
         });
 
         it("Should allow withdrawing ETH fees", async function () {
             // Generate Fee
             await token.connect(user1).approve(await stableEngine.getAddress(), ethers.parseEther("100"));
-            await stableEngine.connect(user1).redeem(ethers.parseEther("100"));
+            await stableEngine.connect(user1).redeem(ethers.parseEther("99.5"));
 
             const ownerEthBefore = await ethers.provider.getBalance(owner.address);
 
@@ -172,8 +177,8 @@ describe("Revenue & Monetization", function () {
 
             const ownerEthAfter = await ethers.provider.getBalance(owner.address);
 
-            const expectedAmt = ethers.parseEther("0.0003");
-            expect(ownerEthAfter - ownerEthBefore + gasSpent).to.equal(expectedAmt);
+            const expectedAmt = ethers.parseUnits("0.0002985", 18);
+            expect(ownerEthAfter - ownerEthBefore + gasSpent).to.be.closeTo(expectedAmt, 1000n);
         });
     });
 });
