@@ -96,7 +96,9 @@ describe("StabilityEngine - Enhanced Test Suite", function () {
 
             await engine.connect(user1).mintWithCollateral(mintAmount, { value: requiredCollateral });
 
-            expect(await nateToken.balanceOf(user1.address)).to.equal(mintAmount);
+            const fee = mintAmount * 50n / 10000n;
+            const netAmount = mintAmount - fee;
+            expect(await nateToken.balanceOf(user1.address)).to.equal(netAmount);
             expect(await engine.userCollateralDeposits(user1.address)).to.equal(requiredCollateral);
         });
 

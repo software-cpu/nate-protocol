@@ -84,7 +84,8 @@ describe("Nate Protocol - End-to-End (E2E) Integration", function () {
             const collateral = ethers.parseEther("0.6");
 
             await stabilityEngine.connect(user1).mintWithCollateral(mintAmount, { value: collateral });
-            expect(await nateToken.balanceOf(user1.address)).to.equal(mintAmount);
+            const mintFee = mintAmount * 50n / 10000n;
+            expect(await nateToken.balanceOf(user1.address)).to.equal(mintAmount - mintFee);
 
             // --- Phase 3: Marketplace Interaction ---
             // owner logs a task in TaskMarket
@@ -92,7 +93,7 @@ describe("Nate Protocol - End-to-End (E2E) Integration", function () {
             await taskMarket.createTask("Improve E2E Tests", 0, 3600);
 
             // User1 stakes NATE to get voting power
-            await nateToken.connect(user1).stake(mintAmount);
+            await nateToken.connect(user1).stake(mintAmount - mintFee);
             const votingPower = await nateToken.getVotingPower(user1.address);
             expect(votingPower).to.be.gt(0);
 
@@ -101,7 +102,7 @@ describe("Nate Protocol - End-to-End (E2E) Integration", function () {
             expect(stats.healthy).to.be.true;
 
             // User1 unstakes and redeems half
-            await nateToken.connect(user1).unstake(mintAmount);
+            await nateToken.connect(user1).unstake(mintAmount - mintFee);
             const burnAmount = ethers.parseEther("500");
 
             // Correct logic (from StabilityEngine upgrade):
