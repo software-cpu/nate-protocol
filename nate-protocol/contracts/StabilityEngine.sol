@@ -61,10 +61,31 @@ contract StabilityEngine is Ownable, AccessControl, Pausable, ReentrancyGuard {
     // ============ Core Stablecoin Mechanics ============
 
     /**
-     * @notice Mint NATE Tokens by depositing ETH collateral.
+     * @notice Expansion Mint (Authorized)
+     * @dev Only the Governance Board (Owner) can mint without collateral,
+     * provided the global Human Capital + Treasury stays above 150% CR.
+     * @param _amount Amount of NATE to mint
+     */
+    function mint(uint256 _amount) external onlyOwner whenNotPaused nonReentrant {
+        require(_amount > 0, "Amount must be > 0");
+        
+        uint256 projectedSupply = nateToken.totalSupply() + _amount;
+        uint256 totalValuationUSD = _calculateTotalValuationUSD();
+        
+        require(
+            totalValuationUSD >= (projectedSupply * MIN_COLLATERAL_RATIO) / 100, 
+            "System undercollateralized for expansion"
+        );
+
+        nateToken.mint(msg.sender, _amount);
+        emit Minted(msg.sender, _amount, 0, block.number);
+    }
+
+    /**
+     * @notice Public Mint (Collateralized)
      * @param _amount The amount of NATE to mint
      */
-    function mint(uint256 _amount) external payable whenNotPaused nonReentrant {
+    function mintWithCollateral(uint256 _amount) external payable whenNotPaused nonReentrant {
         require(_amount > 0, "Amount must be > 0");
         
         // 1. Calculate Required Collateral (ETH)
