@@ -84,6 +84,8 @@ describe("Nate Protocol - End-to-End (E2E) Integration", function () {
             const collateral = ethers.parseEther("0.6");
 
             await stabilityEngine.connect(user1).mintWithCollateral(mintAmount, { value: collateral });
+            const bal = await nateToken.balanceOf(user1.address);
+            console.log("Balance after mint:", ethers.formatEther(bal));
             const mintFee = mintAmount * 50n / 10000n;
             expect(await nateToken.balanceOf(user1.address)).to.equal(mintAmount - mintFee);
 
